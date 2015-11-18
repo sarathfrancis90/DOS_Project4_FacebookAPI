@@ -1,19 +1,23 @@
 package server.facebook.nodes
 
-class Page(var _id:String,
-            var _about:String,
-            var _description:String,
-            var _likes:Integer) {
+class Page(var _id: String,
+           var _about: String,
+           var _description: String,
+           var _likes: Integer) {
 
-  // setters
   def id = _id
+
+  def id_=(in: String): Unit = _id = in
+
   def about = _about
+
+  def about_=(in: String): Unit = _about = in
+
   def description = _description
+
+  def description_=(in: String): Unit = _description = in
+
   def likes = _likes
 
-  //getters
-  def id_=(idIn: String): Unit = _id = idIn
-  def about_=(aboutIn: String): Unit = _about = aboutIn
-  def description_=(descriptionIn: String): Unit = _description = descriptionIn
-  def likes_=(likesIn: Integer): Unit = _likes = likesIn
+  def likes_=(in: Integer): Unit = _likes = in
 }
