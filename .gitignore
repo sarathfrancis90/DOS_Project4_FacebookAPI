@@ -1,0 +1,6 @@
+#Ignore these folders
+.idea
+project
+target
+
+#Ignore these files
