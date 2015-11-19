@@ -34,13 +34,13 @@ case class PhotoNode(var id: String,
                      var name: String,
                      var width: String) extends Node
 
-case class Album(var id: String,
-                 var count: Integer,
-                 var cover_photo: String,
-                 var created_time: String, /*FIXME: */
-                 var description: String,
-                 var from: String, /*FIXME: */
-                 var name: String,
-                 var album_type: String,
-                 var updated_time: String /*FIXME: */) extends Node
+case class AlbumNode(var id: String,
+                     var count: Integer,
+                     var cover_photo: String,
+                     var created_time: String, /*FIXME: */
+                     var description: String,
+                     var from: String, /*FIXME: */
+                     var name: String,
+                     var album_type: String,
+                     var updated_time: String /*FIXME: */) extends Node
 
