@@ -19,11 +19,11 @@ case class GetUserPhotosReq(userId: String, typeOfPhotos: String, startFrom: Str
 case class GetUserPhotosRsp(photos: List[PhotoNode])
 
 case class CreateUserPhotoReq(userId: String, photo: PhotoNode)
-case class CreateUserPhotoRsp()
+case class CreateUserPhotoRsp(photoId: String)
 
 // Node - User, Edge - friends
-case class GetUserFriendsReq()
-case class GetUserFriendsRsp()
+case class GetUserFriendsReq(userId: String, startFrom: String, limit: Integer)
+case class GetUserFriendsRsp(users: List[UserNode])
 
 case class IsUserFriendsWithReq(userId: String, anotherUserId: String)
 case class IsUserFriendsWithRsp(user: UserNode)
@@ -32,3 +32,5 @@ case class IsUserFriendsWithRsp(user: UserNode)
 case class GetUserFeedReq(userId: String, typeOfPosts: String, startFrom: String, limit: Integer)
 case class GetUserFeedRsp(posts: List[PostNode])
 
+case class CreateUserPostReq(userId: String, post: PostNode)
+case class CreateUserPostRsp(postId: String)
