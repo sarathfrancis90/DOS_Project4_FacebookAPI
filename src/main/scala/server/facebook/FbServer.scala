@@ -1,6 +1,7 @@
 package server.facebook
 
 import java.security.MessageDigest
+import java.util.Calendar
 
 import akka.actor._
 import akka.pattern.ask
@@ -15,11 +16,20 @@ import scala.language.postfixOps
 class FbServer extends Actor with ActorLogging {
 
   var users: mutable.HashMap[String, Node] = new mutable.HashMap[String, Node]()
-  var pages: mutable.HashMap[String, Node] = new mutable.HashMap[String, Node]()
-  var posts: mutable.HashMap[String, Node] = new mutable.HashMap[String, Node]()
-
   var usersOwnPosts: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
   var usersTaggedPosts: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
+
+  var pages: mutable.HashMap[String, Node] = new mutable.HashMap[String, Node]()
+
+  var posts: mutable.HashMap[String, Node] = new mutable.HashMap[String, Node]()
+
+  var albums: mutable.HashMap[String, Node] = new mutable.HashMap[String, Node]()
+  var albumsPhotos: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
+
+  var photos: mutable.HashMap[String, Node] = new mutable.HashMap[String, Node]()
+  var photosTags: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
+  var photosLikes: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
+
 
   var forwardingMap: ListBuffer[(ActorRef, ActorRef)] = new ListBuffer[(ActorRef, ActorRef)]()
   var mySubActorCount: Int = 0
@@ -32,7 +42,6 @@ class FbServer extends Actor with ActorLogging {
           if (userNode.id.isEmpty)
             userNode.id = Sha256(userNode.email)
           sender ! addToDb(users, userNode.id, userNode)
-
 
         case "page" =>
           val pageNode = node.asInstanceOf[PageNode]
@@ -56,7 +65,8 @@ class FbServer extends Actor with ActorLogging {
       }
 
     case UpdateUserTaggedPostNtf(userId, postId) =>
-      usersTaggedPosts.get(userId).get.insert(0, postId)
+      if (!usersTaggedPosts.get(userId).isEmpty)
+        usersTaggedPosts.get(userId).get.insert(0, postId)
 
     case CreateUserPostReq(userId, post) =>
       mySubActorCount += 1
@@ -110,7 +120,7 @@ class FbServer extends Actor with ActorLogging {
   }
 
   def Sha256(s: String): String = {
-    val m = MessageDigest.getInstance("SHA-256").digest(s.getBytes("UTF-8"))
+    val m = MessageDigest.getInstance("SHA-1").digest(s.getBytes("UTF-8"))
     m.map("%02x".format(_)).mkString
   }
 }
@@ -195,9 +205,11 @@ object ServerTest {
       println("user01 added")
     }
 
-    val post00 = new PostNode("", "now", "post00 desc", "user00", "post00 message @1", List.empty, "now")
-    val post01 = new PostNode("", "now", "post01 desc", "user00", "post01 message @1", List.empty, "now")
-    val post02 = new PostNode("", "now", "post02 desc", "user00", "post02 message @1", List.empty, "now")
+    val now = Calendar.getInstance().getTime.toString
+
+    val post00 = new PostNode("", now, "post00 desc", "user00", "I'm tagging @1@2 in post00", List.empty, now)
+    val post01 = new PostNode("", now, "post01 desc", "user00", "I'm tagging nobody in post01", List.empty, now)
+    val post02 = new PostNode("", now, "post02 desc", "user00", "I'm tagging @2@1 in post02", List.empty, now)
 
     val futurePostRsp: Future[CreateUserPostRsp] = (server00 ? CreateUserPostReq(0.toString, post00)).mapTo[CreateUserPostRsp]
     val createUserPostRsp = Await.result(futurePostRsp, someTimeout.duration)
