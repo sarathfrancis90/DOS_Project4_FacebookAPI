@@ -126,6 +126,7 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
     case CreateUserPostReqToFbWorker(post, ownPosts) =>
       // make proper post with id
       post.id = Sha256(post.message + post.from)
+      post.to = parseMessageAndFindUsernames(post.message)
 
       // create the post on server that will host it
       val future: Future[CreateFbNodeRsp] = (myFbServerRef ? CreateFbNodeReq("post", post)).mapTo[CreateFbNodeRsp]
@@ -136,7 +137,10 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
 
       ownPosts.insert(0, post.id)
 
-      myFbServerRef ! UpdateUserTaggedPostNtf(post.to, post.id)
+      post.to.foreach(taggedUser => {
+        // please don't tag yourself
+        myFbServerRef ! UpdateUserTaggedPostNtf(taggedUser, post.id)
+      })
 
       myFbServerRef ! CreateUserPostRspToFbServer(post.id)
 
@@ -157,6 +161,16 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
   def Sha256(s: String): String = {
     val m = MessageDigest.getInstance("SHA-1").digest(s.getBytes("UTF-8"))
     m.map("%02x".format(_)).mkString
+  }
+
+  def parseMessageAndFindUsernames(message: String): List[String] = {
+    val usernames: ListBuffer[String] = new ListBuffer[String]()
+    val usernamePattern = "@([A-Za-z0-9_]+)".r
+    val matches = usernamePattern.findAllIn(message)
+    matches.foreach(aMatch => {
+      usernames += aMatch.drop(1)
+    })
+    usernames.toList
   }
 }
 
@@ -181,12 +195,21 @@ object ServerTest {
       println("user01 added")
     }
 
-    val post00 = new PostNode("", "now", "post00 desc", "user00", "post00 message", "1", "now")
-    val post01 = new PostNode("", "now", "post01 desc", "user01", "post01 message", "0", "now")
+    val post00 = new PostNode("", "now", "post00 desc", "user00", "post00 message @1", List.empty, "now")
+    val post01 = new PostNode("", "now", "post01 desc", "user00", "post01 message @1", List.empty, "now")
+    val post02 = new PostNode("", "now", "post02 desc", "user00", "post02 message @1", List.empty, "now")
 
     val futurePostRsp: Future[CreateUserPostRsp] = (server00 ? CreateUserPostReq(0.toString, post00)).mapTo[CreateUserPostRsp]
     val createUserPostRsp = Await.result(futurePostRsp, someTimeout.duration)
     println(createUserPostRsp.postId)
+
+    val futurePostRsp01: Future[CreateUserPostRsp] = (server00 ? CreateUserPostReq(0.toString, post01)).mapTo[CreateUserPostRsp]
+    val createUserPostRsp01 = Await.result(futurePostRsp01, someTimeout.duration)
+    println(createUserPostRsp01.postId)
+
+    val futurePostRsp02: Future[CreateUserPostRsp] = (server00 ? CreateUserPostReq(0.toString, post02)).mapTo[CreateUserPostRsp]
+    val createUserPostRsp02 = Await.result(futurePostRsp02, someTimeout.duration)
+    println(createUserPostRsp02.postId)
 
     val futureGetPostRsp: Future[GetUserFeedRsp] = (server00 ? GetUserFeedReq(1.toString, "tagged", "", 0)).mapTo[GetUserFeedRsp]
     val getUserPostRsp = Await.result(futureGetPostRsp, someTimeout.duration)

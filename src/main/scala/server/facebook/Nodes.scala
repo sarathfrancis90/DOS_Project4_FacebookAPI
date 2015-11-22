@@ -19,7 +19,7 @@ case class PostNode(var id: String,
                     var description: String,
                     var from: String, /*FIXME: can be User or Page*/
                     var message: String,
-                    var to: String, /*FIXME: can be list of Users or Pages*/
+                    var to: List[String],
                     var updated_time: String /*FIXME: a good time*/) extends Node
 
 case class FriendListNode(var id: String,
