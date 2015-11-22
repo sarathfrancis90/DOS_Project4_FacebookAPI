@@ -1,7 +1,26 @@
 package server.facebook
 
+import scala.collection.mutable.ListBuffer
+
 case class CreateFbNodeReq(nodeType: String, node: Node)
 case class CreateFbNodeRsp(result: Boolean, id: String)
+
+case class GetFbNodeReq(nodeType: String, nodeId: String)
+case class GetFbNodeRsp(node: Node)
+
+// messages to workers
+case object PleaseKillYourself
+
+// first degree requests
+case class CreateUserPostReqToFbWorker(post: PostNode, ownPosts: ListBuffer[String])
+case class CreateUserPostRspToFbServer(postId: String)
+
+case class GetUserPostsReqToFbWorker(startFrom: String, limit: Integer, posts: ListBuffer[String])
+case class GetUserPostsRspToFbServer(posts: List[PostNode])
+
+// second degree requests
+case class UpdateUserTaggedPostNtf(userId: String, postId: String)
+
 
 // Node - User, Edge - albums
 case class GetUserAlbumsReq(userId: String, startFrom: String, limit: Integer)
@@ -34,3 +53,26 @@ case class GetUserFeedRsp(posts: List[PostNode])
 
 case class CreateUserPostReq(userId: String, post: PostNode)
 case class CreateUserPostRsp(postId: String)
+
+//
+case class GetPageAlbumsReq()
+case class GetPageAlbumsRsp()
+
+case class CreatePageAlbumReq()
+case class CreatePageAlbumRsp()
+
+//
+case class GetPagePhotosReq()
+case class GetPagePhotosRsp()
+
+case class CreatePagePhotoReq()
+case class CreatePagePhotoRsp()
+
+//
+case class GetPageFeedReq()
+case class GetPageFeedRsp()
+
+case class CreatePagePostReq()
+case class CreatePagePostRsp()
+
+
