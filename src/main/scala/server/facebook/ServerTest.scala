@@ -54,5 +54,28 @@ object ServerTest {
     getUserPostRsp.posts.foreach(post => {
       println(post)
     })
+
+    val photo00 = new PhotoNode(id="",album="", created_time=now, from="user00", height=0, name="photo00 name", width=1, caption="tagging @1")
+    val photo01 = new PhotoNode(id="",album="", created_time=now, from="user00", height=0, name="photo01 name", width=1, caption="")
+    val photo02 = new PhotoNode(id="",album="", created_time=now, from="user00", height=0, name="photo02 name", width=1, caption="tagging @1")
+
+    val futurePhotoRsp: Future[CreateUserPhotoRsp] = (server00 ? CreateUserPhotoReq(0.toString, photo00)).mapTo[CreateUserPhotoRsp]
+    val createUserPhotoRsp = Await.result(futurePhotoRsp, someTimeout.duration)
+    println(createUserPhotoRsp.photoId)
+
+    val futurePhotoRsp01: Future[CreateUserPhotoRsp] = (server00 ? CreateUserPhotoReq(0.toString, photo01)).mapTo[CreateUserPhotoRsp]
+    val createUserPhotoRsp01 = Await.result(futurePhotoRsp01, someTimeout.duration)
+    println(createUserPhotoRsp01.photoId)
+
+    val futurePhotoRsp02: Future[CreateUserPhotoRsp] = (server00 ? CreateUserPhotoReq(0.toString, photo02)).mapTo[CreateUserPhotoRsp]
+    val createUserPhotoRsp02 = Await.result(futurePhotoRsp02, someTimeout.duration)
+    println(createUserPhotoRsp02.photoId)
+
+    val futureGetPhotosRsp: Future[GetUserPhotosRsp] = (server00 ? GetUserPhotosReq(1.toString, "tagged", "", 0)).mapTo[GetUserPhotosRsp]
+    val getUserPhotosRsp = Await.result(futureGetPhotosRsp, someTimeout.duration)
+    getUserPhotosRsp.photos.foreach(photo => {
+      println(photo)
+    })
+
   }
 }

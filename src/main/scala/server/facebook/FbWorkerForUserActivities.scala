@@ -21,8 +21,8 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
 
     case CreateUserPostReqToFbWorker(post, ownPosts) =>
       // make proper post with id
-      post.id = Sha256(post.message + post.from)
-      post.to = parseMessageAndFindUsernames(post.message)
+      post.id = getShaOf(post.message + post.from)
+      post.to = parseTextAndFindUsernames(post.message)
 
       // create the post on server that will host it
       val future: Future[CreateFbNodeRsp] = (myFbServerRef ? CreateFbNodeReq("post", post)).mapTo[CreateFbNodeRsp]
@@ -50,16 +50,47 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
 
       myFbServerRef ! GetUserPostsRspToFbServer(posts.toList)
 
+    case CreateUserPhotoReqToFbWorker(photo, ownPhotos) =>
+      photo.id = getShaOf(photo.name+photo.created_time)
+      val taggedUsers = parseTextAndFindUsernames(photo.caption)
+
+      val future: Future[CreateFbNodeRsp] = (myFbServerRef ? CreateFbNodeReq("photo", photo)).mapTo[CreateFbNodeRsp]
+      val createFbNodeRsp = Await.result(future, someTimeout.duration)
+      if (createFbNodeRsp.result) {
+
+      }
+
+      ownPhotos.insert(0, photo.id)
+
+      taggedUsers.foreach(taggedUser => {
+        // tagging self is okay?
+        myFbServerRef ! UpdateUserTaggedPhotoNtf(taggedUser, photo.id)
+      })
+
+      // update photo.album with this photo.id
+
+      myFbServerRef ! CreateUserPhotoRspToFbServer(photo.id)
+
+    case GetUserPhotosReqToFbWorker(startFrom, limit, photoIds) =>
+      val photos: ListBuffer[PhotoNode] = new ListBuffer[PhotoNode]()
+      photoIds.foreach(photoId => {
+        val future: Future[GetFbNodeRsp] = (myFbServerRef ? GetFbNodeReq("photo", photoId)).mapTo[GetFbNodeRsp]
+        val getFbNodeRsp = Await.result(future, someTimeout.duration)
+        photos += getFbNodeRsp.node.asInstanceOf[PhotoNode]
+      })
+
+      myFbServerRef ! GetUserPhotosRspToFbServer(photos.toList)
+
     case PleaseKillYourself =>
       context.stop(self)
   }
 
-  def Sha256(s: String): String = {
+  def getShaOf(s: String): String = {
     val m = MessageDigest.getInstance("SHA-1").digest(s.getBytes("UTF-8"))
     m.map("%02x".format(_)).mkString
   }
 
-  def parseMessageAndFindUsernames(message: String): List[String] = {
+  def parseTextAndFindUsernames(message: String): List[String] = {
     val usernames: ListBuffer[String] = new ListBuffer[String]()
     val usernamePattern = "@([A-Za-z0-9_]+)".r
     val matches = usernamePattern.findAllIn(message)

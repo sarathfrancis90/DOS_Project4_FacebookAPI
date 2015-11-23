@@ -32,7 +32,8 @@ case class PhotoNode(var id: String,
                      var from: String, /*FIXME: can be a User profile or Page profile*/
                      var height: Integer,
                      var name: String,
-                     var width: String) extends Node
+                     var width: Integer,
+                     var caption: String) extends Node
 
 case class AlbumNode(var id: String,
                      var count: Integer,
