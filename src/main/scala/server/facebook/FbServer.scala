@@ -37,7 +37,7 @@ class FbServer extends Actor with ActorLogging {
         case "user" =>
           val userNode = node.asInstanceOf[UserNode]
           if (userNode.id.isEmpty)
-            userNode.id = getShaOf(userNode.email)
+            userNode.id = getShaOf(userNode.first_name)
           sender ! addToDb(users, userNode.id, userNode)
 
         case "page" =>
@@ -86,6 +86,7 @@ class FbServer extends Actor with ActorLogging {
         albumsPhotos.get(defaultAlbumId).get.insert(0, photoId)
 
     case CreateUserPostReq(userId, post) =>
+      post.from = userId
       mySubActorCount += 1
       val fbWorkerForUserActivities = context.system.actorOf(Props(new FbWorkerForUserActivities), name = 0.toString + "_FbWorker_" + mySubActorCount.toString)
       val forwardingPair = (sender, fbWorkerForUserActivities)
@@ -121,6 +122,7 @@ class FbServer extends Actor with ActorLogging {
       forwardingMapPair._2 ! PleaseKillYourself
 
     case CreateUserPhotoReq(userId, photo) =>
+      photo.from = userId
       mySubActorCount += 1
       val fbWorkerForUserActivities = context.system.actorOf(Props(new FbWorkerForUserActivities), name = 0.toString + "_FbWorker_" + mySubActorCount.toString)
       val forwardingPair = (sender, fbWorkerForUserActivities)

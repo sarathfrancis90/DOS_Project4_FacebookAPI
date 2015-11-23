@@ -35,7 +35,7 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
 
       post.to.foreach(taggedUser => {
         // please don't tag yourself
-        myFbServerRef ! UpdateUserTaggedPostNtf(taggedUser, post.id)
+        myFbServerRef ! UpdateUserTaggedPostNtf(getShaOf(taggedUser), post.id)
       })
 
       myFbServerRef ! CreateUserPostRspToFbServer(post.id)
@@ -64,7 +64,7 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
 
       taggedUsers.foreach(taggedUser => {
         // tagging self is okay?
-        myFbServerRef ! UpdateUserTaggedPhotoNtf(taggedUser, photo.id)
+        myFbServerRef ! UpdateUserTaggedPhotoNtf(getShaOf(taggedUser), photo.id)
       })
 
       // update photo.album with this photo.id
