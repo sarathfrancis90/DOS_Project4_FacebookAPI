@@ -16,7 +16,7 @@ case class CreateUserPostReqToFbWorker(post: PostNode, ownPosts: ListBuffer[Stri
 
 case class CreateUserPostRspToFbServer(postId: String)
 
-case class GetUserPostsReqToFbWorker(startFrom: String, limit: Integer, posts: ListBuffer[String])
+case class GetUserPostsReqToFbWorker(startFrom: String, limit: Integer, postIds: ListBuffer[String])
 
 case class GetUserPostsRspToFbServer(posts: List[PostNode])
 
@@ -24,15 +24,21 @@ case class CreateUserPhotoReqToFbWorker(photo: PhotoNode, ownPhotos: ListBuffer[
 
 case class CreateUserPhotoRspToFbServer(photoId: String)
 
-case class GetUserPhotosReqToFbWorker(startFrom: String, limit: Integer, posts: ListBuffer[String])
+case class GetUserPhotosReqToFbWorker(startFrom: String, limit: Integer, photoIds: ListBuffer[String])
 
 case class GetUserPhotosRspToFbServer(photos: List[PhotoNode])
+
+case class GetUserAlbumsReqToFbWorker(startFrom: String, limit: Integer, albumIds: ListBuffer[String])
+
+case class GetUserAlbumsRspToFbServer(albums: List[AlbumNode])
 
 case class UpdateUserTaggedPostNtf(userId: String, postId: String)
 
 case class UpdateUserTaggedPhotoNtf(userId: String, photoId: String)
 
-case class UpdateAlbumPhotoNtf(albumName: String, photoId: String)
+case class UpdateAlbumPhotoNtf(albumId: String, photoId: String)
+
+case class UpdateUserAlbumNtf(userId: String, albumId: String)
 
 case class GetUserAlbumsReq(userId: String, startFrom: String, limit: Integer)
 

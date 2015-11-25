@@ -1,6 +1,7 @@
 package server.facebook
 
 import java.security.MessageDigest
+import java.util.Calendar
 
 import akka.actor.{Actor, ActorLogging, ActorRef}
 import akka.pattern.ask
@@ -51,8 +52,19 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
       myFbServerRef ! GetUserPostsRspToFbServer(posts.toList)
 
     case CreateUserPhotoReqToFbWorker(photo, ownPhotos) =>
-      photo.id = getShaOf(photo.name+photo.created_time)
+      photo.id = getShaOf(photo.name + photo.created_time)
       val taggedUsers = parseTextAndFindUsernames(photo.caption)
+
+      if (ownPhotos.isEmpty) {
+        val now = Calendar.getInstance().getTime.toString
+        val album = new AlbumNode(id = "", count = 0, cover_photo = "", created_time = now, description = "", from = photo.from, name = "all", album_type = "", updated_time = now)
+        val future: Future[CreateFbNodeRsp] = (myFbServerRef ? CreateFbNodeReq("album", album)).mapTo[CreateFbNodeRsp]
+        val createFbNodeRsp = Await.result(future, someTimeout.duration)
+        if (createFbNodeRsp.result) {
+          album.id = createFbNodeRsp.id
+        }
+        myFbServerRef ! UpdateUserAlbumNtf(photo.from, album.id)
+      }
 
       val future: Future[CreateFbNodeRsp] = (myFbServerRef ? CreateFbNodeReq("photo", photo)).mapTo[CreateFbNodeRsp]
       val createFbNodeRsp = Await.result(future, someTimeout.duration)
@@ -67,7 +79,9 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
         myFbServerRef ! UpdateUserTaggedPhotoNtf(getShaOf(taggedUser), photo.id)
       })
 
-      // update photo.album with this photo.id
+      myFbServerRef ! UpdateAlbumPhotoNtf(getShaOf(photo.from + photo.album), photo.id)
+
+      myFbServerRef ! UpdateAlbumPhotoNtf(getShaOf(photo.from + "all"), photo.id)
 
       myFbServerRef ! CreateUserPhotoRspToFbServer(photo.id)
 
@@ -80,6 +94,16 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
       })
 
       myFbServerRef ! GetUserPhotosRspToFbServer(photos.toList)
+
+    case GetUserAlbumsReqToFbWorker(startFrom, limit, albumIds) =>
+      val albums: ListBuffer[AlbumNode] = new ListBuffer[AlbumNode]()
+      albumIds.foreach(albumId => {
+        val future: Future[GetFbNodeRsp] = (myFbServerRef ? GetFbNodeReq("album", albumId)).mapTo[GetFbNodeRsp]
+        val getFbNodeRsp = Await.result(future, someTimeout.duration)
+        albums += getFbNodeRsp.node.asInstanceOf[AlbumNode]
+      })
+
+      myFbServerRef ! GetUserAlbumsRspToFbServer(albums.toList)
 
     case PleaseKillYourself =>
       context.stop(self)

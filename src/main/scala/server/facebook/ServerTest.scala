@@ -79,5 +79,11 @@ object ServerTest {
       println(photo)
     })
 
+    val futureGetAlbumsRsp: Future[GetUserAlbumsRsp] = (server00 ? GetUserAlbumsReq(user00.id, "", 0)).mapTo[GetUserAlbumsRsp]
+    val getUserAlbumsRsp = Await.result(futureGetAlbumsRsp, someTimeout.duration)
+    getUserAlbumsRsp.albums.foreach(album => {
+      println(album)
+    })
+
   }
 }

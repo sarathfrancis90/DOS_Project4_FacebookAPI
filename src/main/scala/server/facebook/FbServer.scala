@@ -15,6 +15,7 @@ class FbServer extends Actor with ActorLogging {
   var usersTaggedPosts: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
   var usersOwnPhotos: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
   var usersTaggedPhotos: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
+  var usersOwnAlbums: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
 
   var pages: mutable.HashMap[String, Node] = new mutable.HashMap[String, Node]()
 
@@ -26,7 +27,6 @@ class FbServer extends Actor with ActorLogging {
   var photos: mutable.HashMap[String, Node] = new mutable.HashMap[String, Node]()
   var photosTags: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
   var photosLikes: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
-
 
   var forwardingMap: ListBuffer[(ActorRef, ActorRef)] = new ListBuffer[(ActorRef, ActorRef)]()
   var mySubActorCount: Int = 0
@@ -54,8 +54,14 @@ class FbServer extends Actor with ActorLogging {
         case "photo" =>
           val photoNode = node.asInstanceOf[PhotoNode]
           if (photoNode.id.isEmpty)
-            photoNode.id = getShaOf(photoNode.name+photoNode.created_time)
+            photoNode.id = getShaOf(photoNode.name + photoNode.created_time)
           sender ! addToDb(photos, photoNode.id, photoNode)
+
+        case "album" =>
+          val albumNode = node.asInstanceOf[AlbumNode]
+          if (albumNode.id.isEmpty)
+            albumNode.id = getShaOf(albumNode.from + albumNode.name)
+          sender ! addToDb(albums, albumNode.id, albumNode)
       }
 
     case GetFbNodeReq(nodeType, nodeId) =>
@@ -67,6 +73,9 @@ class FbServer extends Actor with ActorLogging {
 
         case "photo" =>
           sender ! GetFbNodeRsp(photos.get(nodeId).get)
+
+        case "album" =>
+          sender ! GetFbNodeRsp(albums.get(nodeId).get)
       }
 
     case UpdateUserTaggedPostNtf(userId, postId) =>
@@ -77,13 +86,17 @@ class FbServer extends Actor with ActorLogging {
       if (!usersTaggedPhotos.get(userId).isEmpty)
         usersTaggedPhotos.get(userId).get.insert(0, photoId)
 
-    case UpdateAlbumPhotoNtf(albumName, photoId) =>
-      val defaultAlbumId = getShaOf("default")
-      val albumId = getShaOf(albumName)
-      if (!albumsPhotos.get(albumId).isEmpty)
+    case UpdateAlbumPhotoNtf(albumId, photoId) =>
+      if (!albumsPhotos.get(albumId).isEmpty) {
         albumsPhotos.get(albumId).get.insert(0, photoId)
-      else
-        albumsPhotos.get(defaultAlbumId).get.insert(0, photoId)
+        val album = albums.get(albumId).get.asInstanceOf[AlbumNode]
+        album.count += 1
+        albums.put(albumId, album)
+      }
+
+    case UpdateUserAlbumNtf(userId, albumId) =>
+      if (!usersOwnAlbums.get(userId).isEmpty)
+        usersOwnAlbums.get(userId).get.insert(0, albumId)
 
     case CreateUserPostReq(userId, post) =>
       post.from = userId
@@ -156,6 +169,21 @@ class FbServer extends Actor with ActorLogging {
       }))
       forwardingMapPair._1 ! GetUserPhotosRsp(photos)
       forwardingMapPair._2 ! PleaseKillYourself
+
+    case GetUserAlbumsReq(userId, startFrom, limit) =>
+      mySubActorCount += 1
+      val fbWorkerForUserActivities = context.system.actorOf(Props(new FbWorkerForUserActivities), name = 0.toString + "_FbWorker_" + mySubActorCount.toString)
+      val forwardingPair = (sender, fbWorkerForUserActivities)
+      forwardingMap += forwardingPair
+      fbWorkerForUserActivities ! "Init"
+      fbWorkerForUserActivities ! GetUserAlbumsReqToFbWorker(startFrom, limit, usersOwnAlbums.get(userId).get)
+
+    case GetUserAlbumsRspToFbServer(albums) =>
+      val forwardingMapPair = forwardingMap.remove(forwardingMap.indexWhere(x => {
+        x._2 == sender
+      }))
+      forwardingMapPair._1 ! GetUserAlbumsRsp(albums)
+      forwardingMapPair._2 ! PleaseKillYourself
   }
 
   def addToDb(db: mutable.HashMap[String, Node], key: String, value: Node): CreateFbNodeRsp = {
@@ -170,6 +198,10 @@ class FbServer extends Actor with ActorLogging {
         usersTaggedPosts.put(key, ListBuffer.empty)
         usersOwnPhotos.put(key, ListBuffer.empty)
         usersTaggedPhotos.put(key, ListBuffer.empty)
+        usersOwnAlbums.put(key, ListBuffer.empty)
+      }
+      else if (db == albums) {
+        albumsPhotos.put(key, ListBuffer.empty)
       }
     }
     CreateFbNodeRsp(result, id)
