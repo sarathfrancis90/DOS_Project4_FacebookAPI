@@ -59,14 +59,25 @@ object ServerTest {
 
     val photo00 = new PhotoNode(id="",album="all", created_time=now, from="", height=0, name="photo00 name", width=1, caption="tagging @User01")
     val photo01 = new PhotoNode(id="",album="all", created_time=now, from="", height=0, name="photo01 name", width=1, caption="")
-    val photo02 = new PhotoNode(id="",album="", created_time=now, from="", height=0, name="photo02 name", width=1, caption="tagging @User01")
+    val photo02 = new PhotoNode(id="",album="everything", created_time=now, from="", height=0, name="photo02 name", width=1, caption="tagging @User01")
 
-    println ("adding one album named all")
-    val album00 = new AlbumNode(id="", count=0, cover_photo="", created_time=now, description="", from="", name="all", album_type="", updated_time=now)
+    {
+      println ("adding one album named all")
+      val album00 = new AlbumNode(id="", count=0, cover_photo="", created_time=now, description="", from="", name="all", album_type="", updated_time=now)
 
-    val futureAlbumRsp00: Future[CreateUserAlbumRsp] = (server00 ? CreateUserAlbumReq(user00.id, album00)).mapTo[CreateUserAlbumRsp]
-    val createUserAlbumRsp00 = Await.result(futureAlbumRsp00, someTimeout.duration)
-    println(createUserAlbumRsp00.albumId)
+      val futureAlbumRsp00: Future[CreateUserAlbumRsp] = (server00 ? CreateUserAlbumReq(user00.id, album00)).mapTo[CreateUserAlbumRsp]
+      val createUserAlbumRsp00 = Await.result(futureAlbumRsp00, someTimeout.duration)
+      println(createUserAlbumRsp00.albumId)
+    }
+
+    {
+      println ("adding one album named everything")
+      val album00 = new AlbumNode(id="", count=0, cover_photo="", created_time=now, description="", from="", name="everything", album_type="", updated_time=now)
+
+      val futureAlbumRsp00: Future[CreateUserAlbumRsp] = (server00 ? CreateUserAlbumReq(user00.id, album00)).mapTo[CreateUserAlbumRsp]
+      val createUserAlbumRsp00 = Await.result(futureAlbumRsp00, someTimeout.duration)
+      println(createUserAlbumRsp00.albumId)
+    }
 
     println ("getting all albums for this user")
     val futureGetAlbumsRsp00: Future[GetUserAlbumsRsp] = (server00 ? GetUserAlbumsReq(user00.id, "", 0)).mapTo[GetUserAlbumsRsp]
