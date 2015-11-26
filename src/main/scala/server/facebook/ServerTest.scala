@@ -6,6 +6,7 @@ import akka.actor._
 import akka.pattern.ask
 import akka.util.Timeout
 
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
@@ -117,8 +118,80 @@ object ServerTest {
       getAlbumPhotosRsp.photos.foreach(photo => {
         println(photo)
       })
-
     })
+
+    println("")
+    println("")
+    println("pages...")
+    println("")
+    println("")
+
+    val pages: ListBuffer[PageNode] = new ListBuffer[PageNode]()
+    for (i <- 0 until 8) {
+      val page = new PageNode(id="", about="about page"+i.toString, description="page"+i.toString+"'s description", name="page"+i.toString, likes=0)
+      val fut: Future[CreateFbNodeRsp] = (server00 ? CreateFbNodeReq("page", page)).mapTo[CreateFbNodeRsp]
+      val createFbNodeRsp = Await.result(fut, someTimeout.duration)
+      if (createFbNodeRsp.result) {
+        println(s"page $i added, pageId = "+page.id)
+        page.id = createFbNodeRsp.id
+        pages += page
+      }
+    }
+
+//    for (i <- 0 until 8) {
+//      val page = new PageNode(id="", about="about page"+i.toString, description="page"+i.toString+"'s description", name="page"+i.toString, likes=0)
+//      val fut: Future[CreateFbNodeRsp] = (server00 ? CreateFbNodeReq("page", page)).mapTo[CreateFbNodeRsp]
+//      val createFbNodeRsp = Await.result(fut, someTimeout.duration)
+//      if (createFbNodeRsp.result) {
+//        println(s"page $i added")
+//        page.id = createFbNodeRsp.id
+//        pages += page
+//      }
+//      else
+//        println(s"page $i not added")
+//    }
+
+    {
+      val fut: Future[AddUserLikedPageRsp] = (server00 ? AddUserLikedPageReq(user00.id, pages(0).name)).mapTo[AddUserLikedPageRsp]
+      val rsp = Await.result(fut, someTimeout.duration)
+      if (rsp.result) {
+        println(pages(0).name+" liked by "+user00.first_name)
+      }
+    }
+
+    {
+      val fut: Future[AddUserLikedPageRsp] = (server00 ? AddUserLikedPageReq(user00.id, pages(1).name)).mapTo[AddUserLikedPageRsp]
+      val rsp = Await.result(fut, someTimeout.duration)
+      if (rsp.result) {
+        println(pages(1).name+" liked by "+user00.first_name)
+      }
+    }
+
+    {
+      val fut: Future[AddUserLikedPageRsp] = (server00 ? AddUserLikedPageReq(user00.id, pages(2).name)).mapTo[AddUserLikedPageRsp]
+      val rsp = Await.result(fut, someTimeout.duration)
+      if (rsp.result) {
+        println(pages(2).name+" liked by "+user00.first_name)
+      }
+    }
+
+    {
+      val fut: Future[AddUserLikedPageRsp] = (server00 ? AddUserLikedPageReq(user01.id, pages(0).name)).mapTo[AddUserLikedPageRsp]
+      val rsp = Await.result(fut, someTimeout.duration)
+      if (rsp.result) {
+        println(pages(0).name+" liked by "+user01.first_name)
+      }
+    }
+
+    {
+      val fut: Future[AddUserLikedPageRsp] = (server00 ? AddUserLikedPageReq(user01.id, "non-existent page name")).mapTo[AddUserLikedPageRsp]
+      val rsp = Await.result(fut, someTimeout.duration)
+      if (rsp.result) {
+      }
+      else {
+        println("unable to like non-existent page")
+      }
+    }
 
   }
 }

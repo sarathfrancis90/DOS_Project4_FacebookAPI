@@ -17,8 +17,10 @@ class FbServer extends Actor with ActorLogging {
   var usersOwnPhotos: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
   var usersTaggedPhotos: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
   var usersOwnAlbums: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
+  var usersLikedPages: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
 
   var pages: mutable.HashMap[String, Node] = new mutable.HashMap[String, Node]()
+  var pagesLikedUsers: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
 
   var posts: mutable.HashMap[String, Node] = new mutable.HashMap[String, Node]()
 
@@ -43,7 +45,8 @@ class FbServer extends Actor with ActorLogging {
 
         case "page" =>
           val pageNode = node.asInstanceOf[PageNode]
-          pageNode.id = getShaOf(pageNode.name)
+          if (pageNode.id.isEmpty)
+            pageNode.id = getShaOf(pageNode.name)
           sender ! addToDb(pages, pageNode.id, pageNode)
 
         case "post" =>
@@ -100,129 +103,77 @@ class FbServer extends Actor with ActorLogging {
       if (!usersOwnAlbums.get(userId).isEmpty)
         usersOwnAlbums.get(userId).get.insert(0, albumId)
 
+    case UpdatePageLikedUserReq(pageId, userId) =>
+      if (!pagesLikedUsers.get(pageId).isEmpty) {
+        pagesLikedUsers.get(pageId).get.insert(0, userId)
+        sender ! UpdatePageLikedUserRsp(true)
+      }
+      else
+        sender ! UpdatePageLikedUserRsp(false)
+
     case CreateUserPostReq(userId, post) =>
       post.from = userId
-      mySubActorCount += 1
-      val fbWorkerForUserActivities = context.system.actorOf(Props(new FbWorkerForUserActivities), name = 0.toString + "_FbWorker_" + mySubActorCount.toString)
-      val forwardingPair = (sender, fbWorkerForUserActivities)
-      forwardingMap += forwardingPair
-      fbWorkerForUserActivities ! "Init"
-      fbWorkerForUserActivities ! CreateUserPostReqToFbWorker(post, usersOwnPosts.get(userId).get)
+      createFbWorkerForUserActivities(sender) ! CreateUserPostReqToFbWorker(post, usersOwnPosts.get(userId).get)
 
     case CreateUserPostRspToFbServer(postId) =>
-      val forwardingMapPair = forwardingMap.remove(forwardingMap.indexWhere(x => {
-        x._2 == sender
-      }))
-      forwardingMapPair._1 ! CreateUserPostRsp(postId)
-      forwardingMapPair._2 ! PleaseKillYourself
+      getRequestor(sender) ! CreateUserPostRsp(postId)
 
     case GetUserFeedReq(userId, typeOfPosts, startFrom, limit) =>
-      mySubActorCount += 1
-      val fbWorkerForUserActivities = context.system.actorOf(Props(new FbWorkerForUserActivities), name = 0.toString + "_FbWorker_" + mySubActorCount.toString)
-      val forwardingPair = (sender, fbWorkerForUserActivities)
-      forwardingMap += forwardingPair
-      fbWorkerForUserActivities ! "Init"
       typeOfPosts match {
         case "own" =>
-          fbWorkerForUserActivities ! GetUserPostsReqToFbWorker(startFrom, limit, usersOwnPosts.get(userId).get)
+          createFbWorkerForUserActivities(sender) ! GetUserPostsReqToFbWorker(startFrom, limit, usersOwnPosts.get(userId).get)
         case "tagged" =>
-          fbWorkerForUserActivities ! GetUserPostsReqToFbWorker(startFrom, limit, usersTaggedPosts.get(userId).get)
+          createFbWorkerForUserActivities(sender) ! GetUserPostsReqToFbWorker(startFrom, limit, usersTaggedPosts.get(userId).get)
       }
 
     case GetUserPostsRspToFbServer(posts) =>
-      val forwardingMapPair = forwardingMap.remove(forwardingMap.indexWhere(x => {
-        x._2 == sender
-      }))
-      forwardingMapPair._1 ! GetUserFeedRsp(posts)
-      forwardingMapPair._2 ! PleaseKillYourself
+      getRequestor(sender) ! GetUserFeedRsp(posts)
 
     case CreateUserPhotoReq(userId, photo) =>
       photo.from = userId
-      mySubActorCount += 1
-      val fbWorkerForUserActivities = context.system.actorOf(Props(new FbWorkerForUserActivities), name = 0.toString + "_FbWorker_" + mySubActorCount.toString)
-      val forwardingPair = (sender, fbWorkerForUserActivities)
-      forwardingMap += forwardingPair
-      fbWorkerForUserActivities ! "Init"
-      fbWorkerForUserActivities ! CreateUserPhotoReqToFbWorker(photo, usersOwnPhotos.get(userId).get)
+      createFbWorkerForUserActivities(sender) ! CreateUserPhotoReqToFbWorker(photo, usersOwnPhotos.get(userId).get)
 
     case CreateUserPhotoRspToFbServer(photoId) =>
-      val forwardingMapPair = forwardingMap.remove(forwardingMap.indexWhere(x => {
-        x._2 == sender
-      }))
-      forwardingMapPair._1 ! CreateUserPhotoRsp(photoId)
-      forwardingMapPair._2 ! PleaseKillYourself
+      getRequestor(sender) ! CreateUserPhotoRsp(photoId)
 
     case GetUserPhotosReq(userId, typeOfPhotos, startFrom, limit) =>
-      mySubActorCount += 1
-      val fbWorkerForUserActivities = context.system.actorOf(Props(new FbWorkerForUserActivities), name = 0.toString + "_FbWorker_" + mySubActorCount.toString)
-      val forwardingPair = (sender, fbWorkerForUserActivities)
-      forwardingMap += forwardingPair
-      fbWorkerForUserActivities ! "Init"
       typeOfPhotos match {
         case "own" =>
-          fbWorkerForUserActivities ! GetUserPhotosReqToFbWorker(startFrom, limit, usersOwnPhotos.get(userId).get)
+          createFbWorkerForUserActivities(sender) ! GetUserPhotosReqToFbWorker(startFrom, limit, usersOwnPhotos.get(userId).get)
         case "tagged" =>
-          fbWorkerForUserActivities ! GetUserPhotosReqToFbWorker(startFrom, limit, usersTaggedPhotos.get(userId).get)
+          createFbWorkerForUserActivities(sender) ! GetUserPhotosReqToFbWorker(startFrom, limit, usersTaggedPhotos.get(userId).get)
       }
 
     case GetUserPhotosRspToFbServer(photos) =>
-      val forwardingMapPair = forwardingMap.remove(forwardingMap.indexWhere(x => {
-        x._2 == sender
-      }))
-      forwardingMapPair._1 ! GetUserPhotosRsp(photos)
-      forwardingMapPair._2 ! PleaseKillYourself
+      getRequestor(sender) ! GetUserPhotosRsp(photos)
 
     case GetUserAlbumsReq(userId, startFrom, limit) =>
-      mySubActorCount += 1
-      val fbWorkerForUserActivities = context.system.actorOf(Props(new FbWorkerForUserActivities), name = 0.toString + "_FbWorker_" + mySubActorCount.toString)
-      val forwardingPair = (sender, fbWorkerForUserActivities)
-      forwardingMap += forwardingPair
-      fbWorkerForUserActivities ! "Init"
-      fbWorkerForUserActivities ! GetUserAlbumsReqToFbWorker(startFrom, limit, usersOwnAlbums.get(userId).get)
+      createFbWorkerForUserActivities(sender) ! GetUserAlbumsReqToFbWorker(startFrom, limit, usersOwnAlbums.get(userId).get)
 
     case GetUserAlbumsRspToFbServer(albums) =>
-      val forwardingMapPair = forwardingMap.remove(forwardingMap.indexWhere(x => {
-        x._2 == sender
-      }))
-      forwardingMapPair._1 ! GetUserAlbumsRsp(albums)
-      forwardingMapPair._2 ! PleaseKillYourself
+      getRequestor(sender) ! GetUserAlbumsRsp(albums)
 
     case CreateUserAlbumReq(userId, album) =>
       album.from = userId
-      mySubActorCount += 1
-      val fbWorkerForUserActivities = context.system.actorOf(Props(new FbWorkerForUserActivities), name = 0.toString + "_FbWorker_" + mySubActorCount.toString)
-      val forwardingPair = (sender, fbWorkerForUserActivities)
-      forwardingMap += forwardingPair
-      fbWorkerForUserActivities ! "Init"
-      fbWorkerForUserActivities ! CreateUserAlbumReqToFbWorker(album, usersOwnAlbums.get(userId).get)
+      createFbWorkerForUserActivities(sender) ! CreateUserAlbumReqToFbWorker(album, usersOwnAlbums.get(userId).get)
 
     case CreateUserAlbumRspToFbServer(albumId) =>
-      val forwardingMapPair = forwardingMap.remove(forwardingMap.indexWhere(x => {
-        x._2 == sender
-      }))
-      forwardingMapPair._1 ! CreateUserAlbumRsp(albumId)
-      forwardingMapPair._2 ! PleaseKillYourself
+      getRequestor(sender) ! CreateUserAlbumRsp(albumId)
 
     case GetAlbumPhotosReq(userId, albumId, startFrom, limit) =>
-      if (!albums.get(albumId).isEmpty && albums.get(albumId).get.asInstanceOf[AlbumNode].from.equals(userId)) {
-        mySubActorCount += 1
-        val fbWorkerForUserActivities = context.system.actorOf(Props(new FbWorkerForUserActivities), name = 0.toString + "_FbWorker_" + mySubActorCount.toString)
-        val forwardingPair = (sender, fbWorkerForUserActivities)
-        forwardingMap += forwardingPair
-        fbWorkerForUserActivities ! "Init"
-        fbWorkerForUserActivities ! GetAlbumPhotosReqToFbWorker(startFrom, limit, albumsPhotos.get(albumId).get)
-      }
-      else {
+      if (!albums.get(albumId).isEmpty && albums.get(albumId).get.asInstanceOf[AlbumNode].from.equals(userId))
+        createFbWorkerForUserActivities(sender) ! GetAlbumPhotosReqToFbWorker(startFrom, limit, albumsPhotos.get(albumId).get)
+      else
         sender ! GetAlbumPhotosRsp(List.empty)
-      }
 
     case GetAlbumPhotosRspToFbServer(photos) =>
-      val forwardingMapPair = forwardingMap.remove(forwardingMap.indexWhere(x => {
-        x._2 == sender
-      }))
-      forwardingMapPair._1 ! GetAlbumPhotosRsp(photos)
-      forwardingMapPair._2 ! PleaseKillYourself
+      getRequestor(sender) ! GetAlbumPhotosRsp(photos)
 
+    case AddUserLikedPageReq(userId, pageName) =>
+      createFbWorkerForUserActivities(sender) ! AddUserLikedPageReqToFbWorker(userId, pageName, usersLikedPages.get(userId).get)
+
+    case AddUserLikedPageRspToFbServer(result) =>
+      getRequestor(sender) ! AddUserLikedPageRsp(result)
   }
 
   def addToDb(db: mutable.HashMap[String, Node], key: String, value: Node): CreateFbNodeRsp = {
@@ -238,9 +189,12 @@ class FbServer extends Actor with ActorLogging {
         usersOwnPhotos.put(key, ListBuffer.empty)
         usersTaggedPhotos.put(key, ListBuffer.empty)
         usersOwnAlbums.put(key, ListBuffer.empty)
+        usersLikedPages.put(key, ListBuffer.empty)
       }
       else if (db == albums) {
         albumsPhotos.put(key, ListBuffer.empty)
+      } else if (db == pages) {
+        pagesLikedUsers.put(key, ListBuffer.empty)
       }
     }
     CreateFbNodeRsp(result, id)
@@ -249,5 +203,22 @@ class FbServer extends Actor with ActorLogging {
   def getShaOf(s: String): String = {
     val m = MessageDigest.getInstance("SHA-1").digest(s.getBytes("UTF-8"))
     m.map("%02x".format(_)).mkString
+  }
+
+  def createFbWorkerForUserActivities(sender: ActorRef): ActorRef = {
+    mySubActorCount += 1
+    val fbWorkerForUserActivities = context.system.actorOf(Props(new FbWorkerForUserActivities), name = 0.toString + "_FbWorker_" + mySubActorCount.toString)
+    val forwardingPair = (sender, fbWorkerForUserActivities)
+    forwardingMap += forwardingPair
+    fbWorkerForUserActivities ! "Init"
+    fbWorkerForUserActivities
+  }
+
+  def getRequestor(sender: ActorRef): ActorRef = {
+    val forwardingMapPair = forwardingMap.remove(forwardingMap.indexWhere(x => {
+      x._2 == sender
+    }))
+    forwardingMapPair._2 ! PleaseKillYourself
+    forwardingMapPair._1
   }
 }
