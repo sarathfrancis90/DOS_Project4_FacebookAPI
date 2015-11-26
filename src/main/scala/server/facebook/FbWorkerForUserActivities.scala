@@ -62,8 +62,8 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
         val createFbNodeRsp = Await.result(future, someTimeout.duration)
         if (createFbNodeRsp.result) {
           album.id = createFbNodeRsp.id
+          myFbServerRef ! UpdateUserAlbumNtf(photo.from, album.id)
         }
-        myFbServerRef ! UpdateUserAlbumNtf(photo.from, album.id)
       }
 
       val future: Future[CreateFbNodeRsp] = (myFbServerRef ? CreateFbNodeReq("photo", photo)).mapTo[CreateFbNodeRsp]
@@ -81,7 +81,8 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
 
       myFbServerRef ! UpdateAlbumPhotoNtf(getShaOf(photo.from + photo.album), photo.id)
 
-      myFbServerRef ! UpdateAlbumPhotoNtf(getShaOf(photo.from + "all"), photo.id)
+      if (!"all".equals(photo.album))
+        myFbServerRef ! UpdateAlbumPhotoNtf(getShaOf(photo.from + "all"), photo.id)
 
       myFbServerRef ! CreateUserPhotoRspToFbServer(photo.id)
 
@@ -104,6 +105,19 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
       })
 
       myFbServerRef ! GetUserAlbumsRspToFbServer(albums.toList)
+
+    case CreateUserAlbumReqToFbWorker(album, ownAlbums) =>
+      album.id = getShaOf(album.from + album.name)
+
+      val future: Future[CreateFbNodeRsp] = (myFbServerRef ? CreateFbNodeReq("album", album)).mapTo[CreateFbNodeRsp]
+      val createFbNodeRsp = Await.result(future, someTimeout.duration)
+      if (createFbNodeRsp.result) {
+
+      }
+
+      ownAlbums.insert(0, album.id)
+
+      myFbServerRef ! CreateUserAlbumRspToFbServer(album.id)
 
     case PleaseKillYourself =>
       context.stop(self)

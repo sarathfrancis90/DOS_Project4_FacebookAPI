@@ -184,6 +184,22 @@ class FbServer extends Actor with ActorLogging {
       }))
       forwardingMapPair._1 ! GetUserAlbumsRsp(albums)
       forwardingMapPair._2 ! PleaseKillYourself
+
+    case CreateUserAlbumReq(userId, album) =>
+      album.from = userId
+      mySubActorCount += 1
+      val fbWorkerForUserActivities = context.system.actorOf(Props(new FbWorkerForUserActivities), name = 0.toString + "_FbWorker_" + mySubActorCount.toString)
+      val forwardingPair = (sender, fbWorkerForUserActivities)
+      forwardingMap += forwardingPair
+      fbWorkerForUserActivities ! "Init"
+      fbWorkerForUserActivities ! CreateUserAlbumReqToFbWorker(album, usersOwnAlbums.get(userId).get)
+
+    case CreateUserAlbumRspToFbServer(albumId) =>
+      val forwardingMapPair = forwardingMap.remove(forwardingMap.indexWhere(x => {
+        x._2 == sender
+      }))
+      forwardingMapPair._1 ! CreateUserAlbumRsp(albumId)
+      forwardingMapPair._2 ! PleaseKillYourself
   }
 
   def addToDb(db: mutable.HashMap[String, Node], key: String, value: Node): CreateFbNodeRsp = {
