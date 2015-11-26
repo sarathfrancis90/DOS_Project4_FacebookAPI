@@ -119,6 +119,16 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
 
       myFbServerRef ! CreateUserAlbumRspToFbServer(album.id)
 
+    case GetAlbumPhotosReqToFbWorker(startFrom, limit, photoIds) =>
+      val photos: ListBuffer[PhotoNode] = new ListBuffer[PhotoNode]()
+      photoIds.foreach(photoId => {
+        val future: Future[GetFbNodeRsp] = (myFbServerRef ? GetFbNodeReq("photo", photoId)).mapTo[GetFbNodeRsp]
+        val getFbNodeRsp = Await.result(future, someTimeout.duration)
+        photos += getFbNodeRsp.node.asInstanceOf[PhotoNode]
+      })
+
+      myFbServerRef ! GetAlbumPhotosRspToFbServer(photos.toList)
+
     case PleaseKillYourself =>
       context.stop(self)
   }

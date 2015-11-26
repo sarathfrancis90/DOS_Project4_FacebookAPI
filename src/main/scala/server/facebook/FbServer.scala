@@ -1,6 +1,7 @@
 package server.facebook
 
 import java.security.MessageDigest
+import java.util.Calendar
 
 import akka.actor._
 
@@ -91,6 +92,7 @@ class FbServer extends Actor with ActorLogging {
         albumsPhotos.get(albumId).get.insert(0, photoId)
         val album = albums.get(albumId).get.asInstanceOf[AlbumNode]
         album.count += 1
+        album.updated_time = Calendar.getInstance().getTime.toString
         albums.put(albumId, album)
       }
 
@@ -200,6 +202,27 @@ class FbServer extends Actor with ActorLogging {
       }))
       forwardingMapPair._1 ! CreateUserAlbumRsp(albumId)
       forwardingMapPair._2 ! PleaseKillYourself
+
+    case GetAlbumPhotosReq(userId, albumId, startFrom, limit) =>
+      if (!albums.get(albumId).isEmpty && albums.get(albumId).get.asInstanceOf[AlbumNode].from.equals(userId)) {
+        mySubActorCount += 1
+        val fbWorkerForUserActivities = context.system.actorOf(Props(new FbWorkerForUserActivities), name = 0.toString + "_FbWorker_" + mySubActorCount.toString)
+        val forwardingPair = (sender, fbWorkerForUserActivities)
+        forwardingMap += forwardingPair
+        fbWorkerForUserActivities ! "Init"
+        fbWorkerForUserActivities ! GetAlbumPhotosReqToFbWorker(startFrom, limit, albumsPhotos.get(albumId).get)
+      }
+      else {
+        sender ! GetAlbumPhotosRsp(List.empty)
+      }
+
+    case GetAlbumPhotosRspToFbServer(photos) =>
+      val forwardingMapPair = forwardingMap.remove(forwardingMap.indexWhere(x => {
+        x._2 == sender
+      }))
+      forwardingMapPair._1 ! GetAlbumPhotosRsp(photos)
+      forwardingMapPair._2 ! PleaseKillYourself
+
   }
 
   def addToDb(db: mutable.HashMap[String, Node], key: String, value: Node): CreateFbNodeRsp = {

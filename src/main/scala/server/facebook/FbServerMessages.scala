@@ -36,6 +36,10 @@ case class CreateUserAlbumReqToFbWorker(album: AlbumNode, ownAlbums: ListBuffer[
 
 case class CreateUserAlbumRspToFbServer(albumId: String)
 
+case class GetAlbumPhotosReqToFbWorker(startFrom: String, limit: Integer, photoIds: ListBuffer[String])
+
+case class GetAlbumPhotosRspToFbServer(photos: List[PhotoNode])
+
 case class UpdateUserTaggedPostNtf(userId: String, postId: String)
 
 case class UpdateUserTaggedPhotoNtf(userId: String, photoId: String)
@@ -79,6 +83,10 @@ case class GetUserFeedRsp(posts: List[PostNode])
 case class CreateUserPostReq(userId: String, post: PostNode)
 
 case class CreateUserPostRsp(postId: String)
+
+case class GetAlbumPhotosReq(userId: String, albumId: String, startFrom: String, limit: Integer)
+
+case class GetAlbumPhotosRsp(photos: List[PhotoNode])
 
 case class GetPageAlbumsReq()
 
