@@ -21,15 +21,12 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
       myFbServerRef = sender
 
     case CreateUserPostReqToFbWorker(post, ownPosts) =>
-      // make proper post with id
-      post.id = getShaOf(post.message + post.from)
       post.to = parseTextAndFindUsernames(post.message)
 
-      // create the post on server that will host it
       val future: Future[CreateFbNodeRsp] = (myFbServerRef ? CreateFbNodeReq("post", post)).mapTo[CreateFbNodeRsp]
       val createFbNodeRsp = Await.result(future, someTimeout.duration)
       if (createFbNodeRsp.result) {
-
+        post.id = createFbNodeRsp.id
       }
 
       ownPosts.insert(0, post.id)
@@ -159,6 +156,33 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
       })
 
       myFbServerRef ! GetPageLikedUsersRspToFbServer(users.toList)
+
+    case CreatePagePostReqToFbWorker(post, ownPosts, likedUsers) =>
+      val future: Future[CreateFbNodeRsp] = (myFbServerRef ? CreateFbNodeReq("post", post)).mapTo[CreateFbNodeRsp]
+      val createFbNodeRsp = Await.result(future, someTimeout.duration)
+      if (createFbNodeRsp.result) {
+        post.id = createFbNodeRsp.id
+        ownPosts.insert(0, post.id)
+
+        likedUsers.foreach(likedUser => {
+          myFbServerRef ! UpdateUserTimelineNtf(likedUser, "post", post.id)
+        })
+
+        myFbServerRef ! CreatePagePostRspToFbServer(post.id)
+      }
+      else
+        myFbServerRef ! CreatePagePostRspToFbServer("")
+
+    case GetUserTimelineReqToFbWorker(startFrom, limit, timelineEvents) =>
+      val events: ListBuffer[(String, Node)] = new ListBuffer[(String, Node)]()
+      timelineEvents.foreach(timelineEvent => {
+        val future: Future[GetFbNodeRsp] = (myFbServerRef ? GetFbNodeReq(timelineEvent._1, timelineEvent._2)).mapTo[GetFbNodeRsp]
+        val getFbNodeRsp = Await.result(future, someTimeout.duration)
+        val event = (timelineEvent._1, getFbNodeRsp.node)
+        events += event
+      })
+
+      myFbServerRef ! GetUserTimelineRspToFbServer(events.toList)
 
     case PleaseKillYourself =>
       context.stop(self)

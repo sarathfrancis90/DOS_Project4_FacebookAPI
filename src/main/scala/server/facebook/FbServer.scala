@@ -18,9 +18,11 @@ class FbServer extends Actor with ActorLogging {
   var usersTaggedPhotos: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
   var usersOwnAlbums: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
   var usersLikedPages: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
+  var usersTimeline: mutable.HashMap[String, ListBuffer[(String, String)]] = new mutable.HashMap[String, ListBuffer[(String, String)]]()
 
   var pages: mutable.HashMap[String, Node] = new mutable.HashMap[String, Node]()
   var pagesLikedUsers: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
+  var pagesOwnPosts: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
 
   var posts: mutable.HashMap[String, Node] = new mutable.HashMap[String, Node]()
 
@@ -52,7 +54,7 @@ class FbServer extends Actor with ActorLogging {
         case "post" =>
           val postNode = node.asInstanceOf[PostNode]
           if (postNode.id.isEmpty)
-            postNode.id = getShaOf(postNode.message)
+            postNode.id = getShaOf(postNode.from + postNode.message + postNode.created_time)
           sender ! addToDb(posts, postNode.id, postNode)
 
         case "photo" =>
@@ -119,6 +121,12 @@ class FbServer extends Actor with ActorLogging {
       }
       else
         sender ! UpdatePageLikedUserRsp(false)
+
+    case UpdateUserTimelineNtf(userId, eventType, eventId) =>
+      if (!usersTimeline.get(userId).isEmpty) {
+        val newEvent = (eventType, eventId)
+        usersTimeline.get(userId).get.insert(0, newEvent)
+      }
 
     case CreateUserPostReq(userId, post) =>
       post.from = userId
@@ -195,6 +203,19 @@ class FbServer extends Actor with ActorLogging {
 
     case GetPageLikedUsersRspToFbServer(users) =>
       getRequestor(sender) ! GetPageLikedUsersRsp(users)
+
+    case CreatePagePostReq(pageId, post) =>
+      post.from = pageId
+      createFbWorkerForUserActivities(sender) ! CreatePagePostReqToFbWorker(post, pagesOwnPosts.get(pageId).get, pagesLikedUsers.get(pageId).get)
+
+    case CreatePagePostRspToFbServer(postId) =>
+      getRequestor(sender) ! CreatePagePostRsp(postId)
+
+    case GetUserTimelineReq(userId, startFrom, limit) =>
+      createFbWorkerForUserActivities(sender) ! GetUserTimelineReqToFbWorker(startFrom, limit, usersTimeline.get(userId).get)
+
+    case GetUserTimelineRspToFbServer(events) =>
+      getRequestor(sender) ! GetUserTimelineRsp(events)
   }
 
   def addToDb(db: mutable.HashMap[String, Node], key: String, value: Node): CreateFbNodeRsp = {
@@ -211,11 +232,13 @@ class FbServer extends Actor with ActorLogging {
         usersTaggedPhotos.put(key, ListBuffer.empty)
         usersOwnAlbums.put(key, ListBuffer.empty)
         usersLikedPages.put(key, ListBuffer.empty)
+        usersTimeline.put(key, ListBuffer.empty)
       }
       else if (db == albums) {
         albumsPhotos.put(key, ListBuffer.empty)
       } else if (db == pages) {
         pagesLikedUsers.put(key, ListBuffer.empty)
+        pagesOwnPosts.put(key, ListBuffer.empty)
       }
     }
     CreateFbNodeRsp(result, id)
