@@ -23,6 +23,7 @@ class FbServer extends Actor with ActorLogging {
   var pages: mutable.HashMap[String, Node] = new mutable.HashMap[String, Node]()
   var pagesLikedUsers: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
   var pagesOwnPosts: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
+  var pagesOwnPhotos: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
 
   var posts: mutable.HashMap[String, Node] = new mutable.HashMap[String, Node]()
 
@@ -216,6 +217,13 @@ class FbServer extends Actor with ActorLogging {
 
     case GetUserTimelineRspToFbServer(events) =>
       getRequestor(sender) ! GetUserTimelineRsp(events)
+
+    case CreatePagePhotoReq(pageId, photo) =>
+      photo.from = pageId
+      createFbWorkerForUserActivities(sender) ! CreatePagePhotoReqToFbWorker(photo, pagesOwnPhotos.get(pageId).get, pagesLikedUsers.get(pageId).get)
+
+    case CreatePagePhotoRspToFbServer(photoId) =>
+      getRequestor(sender) ! CreatePagePhotoRsp(photoId)
   }
 
   def addToDb(db: mutable.HashMap[String, Node], key: String, value: Node): CreateFbNodeRsp = {
@@ -239,6 +247,7 @@ class FbServer extends Actor with ActorLogging {
       } else if (db == pages) {
         pagesLikedUsers.put(key, ListBuffer.empty)
         pagesOwnPosts.put(key, ListBuffer.empty)
+        pagesOwnPhotos.put(key, ListBuffer.empty)
       }
     }
     CreateFbNodeRsp(result, id)

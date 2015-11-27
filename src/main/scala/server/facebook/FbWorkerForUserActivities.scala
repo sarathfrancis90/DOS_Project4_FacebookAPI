@@ -184,6 +184,22 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
 
       myFbServerRef ! GetUserTimelineRspToFbServer(events.toList)
 
+    case CreatePagePhotoReqToFbWorker(photo, ownPhotos, likedUsers) =>
+      val future: Future[CreateFbNodeRsp] = (myFbServerRef ? CreateFbNodeReq("photo", photo)).mapTo[CreateFbNodeRsp]
+      val createFbNodeRsp = Await.result(future, someTimeout.duration)
+      if (createFbNodeRsp.result) {
+        photo.id = createFbNodeRsp.id
+        ownPhotos.insert(0, photo.id)
+
+        likedUsers.foreach(likedUser => {
+          myFbServerRef ! UpdateUserTimelineNtf(likedUser, "photo", photo.id)
+        })
+
+        myFbServerRef ! CreatePagePhotoRspToFbServer(photo.id)
+      }
+      else
+        myFbServerRef ! CreatePagePhotoRspToFbServer("")
+
     case PleaseKillYourself =>
       context.stop(self)
   }

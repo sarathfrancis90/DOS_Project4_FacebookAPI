@@ -60,6 +60,10 @@ case class GetUserTimelineReqToFbWorker(startFrom: String, limit: Integer, timel
 
 case class GetUserTimelineRspToFbServer(events: List[(String, Node)])
 
+case class CreatePagePhotoReqToFbWorker(photo: PhotoNode, ownPhotos: ListBuffer[String], likedUsers: ListBuffer[String])
+
+case class CreatePagePhotoRspToFbServer(photoId: String)
+
 case class UpdateUserTaggedPostNtf(userId: String, postId: String)
 
 case class UpdateUserTaggedPhotoNtf(userId: String, photoId: String)
@@ -130,22 +134,6 @@ case class GetUserTimelineReq(userId: String, startFrom: String, limit: Integer)
 
 case class GetUserTimelineRsp(events: List[(String, Node)])
 
-case class GetPageAlbumsReq()
+case class CreatePagePhotoReq(pageId: String, photo: PhotoNode)
 
-case class GetPageAlbumsRsp()
-
-case class CreatePageAlbumReq()
-
-case class CreatePageAlbumRsp()
-
-case class GetPagePhotosReq()
-
-case class GetPagePhotosRsp()
-
-case class CreatePagePhotoReq()
-
-case class CreatePagePhotoRsp()
-
-case class GetPageFeedReq()
-
-case class GetPageFeedRsp()
+case class CreatePagePhotoRsp(photoId: String)

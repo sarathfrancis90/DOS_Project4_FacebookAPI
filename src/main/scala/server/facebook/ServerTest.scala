@@ -256,13 +256,44 @@ object ServerTest {
 
     println("")
     println(pages(0).name+" posting posts")
-    val pagePosts = ListBuffer[PostNode]()
+    val pagePosts = new ListBuffer[PostNode]()
     for (i <- 0 until 8) {
       val pagePost = new PostNode("", now, "page post "+i.toString+" description", "", "some message in page post "+i.toString, List.empty, now)
       val futurePagePostRsp: Future[CreatePagePostRsp] = (server00 ? CreatePagePostReq(pages(0).id, pagePost)).mapTo[CreatePagePostRsp]
       val createPagePostRsp = Await.result(futurePagePostRsp, someTimeout.duration)
       println(createPagePostRsp.postId)
       pagePosts += pagePost
+    }
+
+    {
+      println("")
+      println(user00.first_name+"'s timeline")
+      val fut: Future[GetUserTimelineRsp] = (server00 ? GetUserTimelineReq(user00.id, "", 0)).mapTo[GetUserTimelineRsp]
+      val rsp = Await.result(fut, someTimeout.duration)
+      rsp.events.foreach(event => {
+        println(event)
+      })
+    }
+
+    {
+      println("")
+      println(user01.first_name+"'s timeline")
+      val fut: Future[GetUserTimelineRsp] = (server00 ? GetUserTimelineReq(user01.id, "", 0)).mapTo[GetUserTimelineRsp]
+      val rsp = Await.result(fut, someTimeout.duration)
+      rsp.events.foreach(event => {
+        println(event)
+      })
+    }
+
+    println("")
+    println(pages(0).name+" posting photos")
+    val pagePhotos = new ListBuffer[PhotoNode]()
+    for (i <- 0 until 8) {
+      val pagePhoto = new PhotoNode(id = "", album = "all", created_time = now, from = "", height = 0, name = "page photo "+i.toString+" name", width = 1, caption = "tagging @User01")
+      val futurePagePhotoRsp: Future[CreatePagePhotoRsp] = (server00 ? CreatePagePhotoReq(pages(0).id, pagePhoto)).mapTo[CreatePagePhotoRsp]
+      val createPagePhotoRsp = Await.result(futurePagePhotoRsp, someTimeout.duration)
+      println(createPagePhotoRsp.photoId)
+      pagePhotos += pagePhoto
     }
 
     {
