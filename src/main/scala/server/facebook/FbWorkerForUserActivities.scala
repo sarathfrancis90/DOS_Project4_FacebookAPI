@@ -129,7 +129,7 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
     case AddUserLikedPageReqToFbWorker(userId, pageName, ownLikedPages) =>
       val pageId = getShaOf(pageName)
 
-      val future: Future[UpdatePageLikedUserRsp] = (myFbServerRef ? UpdatePageLikedUserReq(pageId, userId)).mapTo[UpdatePageLikedUserRsp]
+      val future: Future[UpdatePageLikedUserRsp] = (myFbServerRef ? UpdatePageLikedUserReq("add", pageId, userId)).mapTo[UpdatePageLikedUserRsp]
       val updatePageLikedUserRsp = Await.result(future, someTimeout.duration)
       if (updatePageLikedUserRsp.result) {
         ownLikedPages.insert(0, pageId)
@@ -199,6 +199,15 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
       }
       else
         myFbServerRef ! CreatePagePhotoRspToFbServer("")
+
+    case RemoveUserLikedPageReqToFbWorker(userId, pageId, ownLikedPages) =>
+      val future: Future[UpdatePageLikedUserRsp] = (myFbServerRef ? UpdatePageLikedUserReq("remove", pageId, userId)).mapTo[UpdatePageLikedUserRsp]
+      val updatePageLikedUserRsp = Await.result(future, someTimeout.duration)
+      if (updatePageLikedUserRsp.result) {
+        ownLikedPages.remove(ownLikedPages.indexWhere(x=>{x==pageId}))
+      }
+
+      myFbServerRef ! RemoveUserLikedPageRspToFbServer(updatePageLikedUserRsp.result)
 
     case PleaseKillYourself =>
       context.stop(self)

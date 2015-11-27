@@ -64,6 +64,10 @@ case class CreatePagePhotoReqToFbWorker(photo: PhotoNode, ownPhotos: ListBuffer[
 
 case class CreatePagePhotoRspToFbServer(photoId: String)
 
+case class RemoveUserLikedPageReqToFbWorker(userId: String, pageId: String, ownLikedPages: ListBuffer[String])
+
+case class RemoveUserLikedPageRspToFbServer(result: Boolean)
+
 case class UpdateUserTaggedPostNtf(userId: String, postId: String)
 
 case class UpdateUserTaggedPhotoNtf(userId: String, photoId: String)
@@ -72,7 +76,7 @@ case class UpdateAlbumPhotoNtf(albumId: String, photoId: String)
 
 case class UpdateUserAlbumNtf(userId: String, albumId: String)
 
-case class UpdatePageLikedUserReq(pageId: String, userId: String)
+case class UpdatePageLikedUserReq(action: String, pageId: String, userId: String)
 
 case class UpdatePageLikedUserRsp(result: Boolean)
 
@@ -137,3 +141,7 @@ case class GetUserTimelineRsp(events: List[(String, Node)])
 case class CreatePagePhotoReq(pageId: String, photo: PhotoNode)
 
 case class CreatePagePhotoRsp(photoId: String)
+
+case class RemoveUserLikedPageReq(userId: String, pageId: String)
+
+case class RemoveUserLikedPageRsp(result: Boolean)

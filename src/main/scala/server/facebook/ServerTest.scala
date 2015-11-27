@@ -316,5 +316,42 @@ object ServerTest {
       })
     }
 
+    {
+      println("")
+      println("unliking a page")
+      val fut: Future[RemoveUserLikedPageRsp] = (server00 ? RemoveUserLikedPageReq(user00.id, pages(0).id)).mapTo[RemoveUserLikedPageRsp]
+      val rsp = Await.result(fut, someTimeout.duration)
+    }
+
+    println("")
+    println(pages(0).name+" posting photos")
+    for (i <- 8 until 12) {
+      val pagePhoto = new PhotoNode(id = "", album = "all", created_time = now, from = "", height = 0, name = "page photo "+i.toString+" name", width = 1, caption = "tagging @User01")
+      val futurePagePhotoRsp: Future[CreatePagePhotoRsp] = (server00 ? CreatePagePhotoReq(pages(0).id, pagePhoto)).mapTo[CreatePagePhotoRsp]
+      val createPagePhotoRsp = Await.result(futurePagePhotoRsp, someTimeout.duration)
+      println(createPagePhotoRsp.photoId)
+      pagePhotos += pagePhoto
+    }
+
+    {
+      println("")
+      println(user00.first_name+"'s timeline")
+      val fut: Future[GetUserTimelineRsp] = (server00 ? GetUserTimelineReq(user00.id, "", 0)).mapTo[GetUserTimelineRsp]
+      val rsp = Await.result(fut, someTimeout.duration)
+      rsp.events.foreach(event => {
+        println(event)
+      })
+    }
+
+    {
+      println("")
+      println(user01.first_name+"'s timeline")
+      val fut: Future[GetUserTimelineRsp] = (server00 ? GetUserTimelineReq(user01.id, "", 0)).mapTo[GetUserTimelineRsp]
+      val rsp = Await.result(fut, someTimeout.duration)
+      rsp.events.foreach(event => {
+        println(event)
+      })
+    }
+
   }
 }

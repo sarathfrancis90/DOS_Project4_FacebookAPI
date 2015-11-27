@@ -110,13 +110,23 @@ class FbServer extends Actor with ActorLogging {
       if (!usersOwnAlbums.get(userId).isEmpty)
         usersOwnAlbums.get(userId).get.insert(0, albumId)
 
-    case UpdatePageLikedUserReq(pageId, userId) =>
+    case UpdatePageLikedUserReq(action, pageId, userId) =>
       if (!pagesLikedUsers.get(pageId).isEmpty) {
-        if (!pagesLikedUsers.get(pageId).get.contains(userId)) {
-          pagesLikedUsers.get(pageId).get.insert(0, userId)
-          val page = pages.get(pageId).get.asInstanceOf[PageNode]
-          page.likes += 1
-          pages.put(pageId, page)
+        if ("add".equals(action)) {
+          if (!pagesLikedUsers.get(pageId).get.contains(userId)) {
+            pagesLikedUsers.get(pageId).get.insert(0, userId)
+            val page = pages.get(pageId).get.asInstanceOf[PageNode]
+            page.likes += 1
+            pages.put(pageId, page)
+          }
+        }
+        else {
+          if (pagesLikedUsers.get(pageId).get.contains(userId)) {
+            pagesLikedUsers.get(pageId).get.remove(pagesLikedUsers.get(pageId).get.indexWhere(x=>{x==userId}))
+            val page = pages.get(pageId).get.asInstanceOf[PageNode]
+            page.likes -= 1
+            pages.put(pageId, page)
+          }
         }
         sender ! UpdatePageLikedUserRsp(true)
       }
@@ -224,6 +234,12 @@ class FbServer extends Actor with ActorLogging {
 
     case CreatePagePhotoRspToFbServer(photoId) =>
       getRequestor(sender) ! CreatePagePhotoRsp(photoId)
+
+    case RemoveUserLikedPageReq(userId, pageId) =>
+      createFbWorkerForUserActivities(sender) ! RemoveUserLikedPageReqToFbWorker(userId, pageId, usersLikedPages.get(userId).get)
+
+    case RemoveUserLikedPageRspToFbServer(result) =>
+      getRequestor(sender) ! RemoveUserLikedPageRsp(result)
   }
 
   def addToDb(db: mutable.HashMap[String, Node], key: String, value: Node): CreateFbNodeRsp = {
