@@ -193,5 +193,65 @@ object ServerTest {
       }
     }
 
+    {
+      println("")
+      println("pages liked by "+user00.first_name)
+      val fut: Future[GetUserLikedPagesRsp] = (server00 ? GetUserLikedPagesReq(user00.id, "", 0)).mapTo[GetUserLikedPagesRsp]
+      val rsp = Await.result(fut, someTimeout.duration)
+      rsp.pages.foreach(page => {
+        println(page)
+      })
+    }
+
+    {
+      println("")
+      println("pages liked by "+user01.first_name)
+      val fut: Future[GetUserLikedPagesRsp] = (server00 ? GetUserLikedPagesReq(user01.id, "", 0)).mapTo[GetUserLikedPagesRsp]
+      val rsp = Await.result(fut, someTimeout.duration)
+      rsp.pages.foreach(page => {
+        println(page)
+      })
+    }
+
+    {
+      println("")
+      println("users who liked "+pages(0).name)
+      val fut: Future[GetPageLikedUsersRsp] = (server00 ? GetPageLikedUsersReq(pages(0).id, "", 0)).mapTo[GetPageLikedUsersRsp]
+      val rsp = Await.result(fut, someTimeout.duration)
+      rsp.users.foreach(user => {
+        println(user)
+      })
+    }
+
+    {
+      println("")
+      println("users who liked "+pages(1).name)
+      val fut: Future[GetPageLikedUsersRsp] = (server00 ? GetPageLikedUsersReq(pages(1).id, "", 0)).mapTo[GetPageLikedUsersRsp]
+      val rsp = Await.result(fut, someTimeout.duration)
+      rsp.users.foreach(user => {
+        println(user)
+      })
+    }
+
+    {
+      println("")
+      println("users who liked "+pages(2).name)
+      val fut: Future[GetPageLikedUsersRsp] = (server00 ? GetPageLikedUsersReq(pages(2).id, "", 0)).mapTo[GetPageLikedUsersRsp]
+      val rsp = Await.result(fut, someTimeout.duration)
+      rsp.users.foreach(user => {
+        println(user)
+      })
+    }
+
+    {
+      println("")
+      println("users who liked "+pages(3).name)
+      val fut: Future[GetPageLikedUsersRsp] = (server00 ? GetPageLikedUsersReq(pages(3).id, "", 0)).mapTo[GetPageLikedUsersRsp]
+      val rsp = Await.result(fut, someTimeout.duration)
+      rsp.users.foreach(user => {
+        println(user)
+      })
+    }
+
   }
 }

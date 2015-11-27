@@ -140,6 +140,25 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
 
       myFbServerRef ! AddUserLikedPageRspToFbServer(updatePageLikedUserRsp.result)
 
+    case GetUserLikedPagesReqToFbWorker(startFrom, limit, pageIds) =>
+      val pages: ListBuffer[PageNode] = new ListBuffer[PageNode]()
+      pageIds.foreach(pageId => {
+        val future: Future[GetFbNodeRsp] = (myFbServerRef ? GetFbNodeReq("page", pageId)).mapTo[GetFbNodeRsp]
+        val getFbNodeRsp = Await.result(future, someTimeout.duration)
+        pages += getFbNodeRsp.node.asInstanceOf[PageNode]
+      })
+
+      myFbServerRef ! GetUserLikedPagesRspToFbServer(pages.toList)
+
+    case GetPageLikedUsersReqToFbWorker(startFrom, limit, likedUserIds) =>
+      val users: ListBuffer[UserNode] = new ListBuffer[UserNode]()
+      likedUserIds.foreach(likedUserId => {
+        val future: Future[GetFbNodeRsp] = (myFbServerRef ? GetFbNodeReq("user", likedUserId)).mapTo[GetFbNodeRsp]
+        val getFbNodeRsp = Await.result(future, someTimeout.duration)
+        users += getFbNodeRsp.node.asInstanceOf[UserNode]
+      })
+
+      myFbServerRef ! GetPageLikedUsersRspToFbServer(users.toList)
 
     case PleaseKillYourself =>
       context.stop(self)
