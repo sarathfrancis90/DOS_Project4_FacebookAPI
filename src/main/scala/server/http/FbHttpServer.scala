@@ -2,7 +2,7 @@ package server.http
 
 import akka.pattern.ask
 import akka.util.Timeout
-import server.facebook._
+import _root_.server.facebook._
 import spray.can.Http
 import spray.http.HttpMethods._
 import spray.http._
@@ -12,7 +12,7 @@ import akka.actor._
 import akka.io.IO
 import spray.can._
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
@@ -24,6 +24,8 @@ object FbJsonProtocol extends DefaultJsonProtocol {
   implicit val photoNodeFormat = jsonFormat8(PhotoNode)
   implicit val albumNodeFormat = jsonFormat9(AlbumNode)
   implicit val createFbNodeRspFormat = jsonFormat2(CreateFbNodeRsp)
+  implicit val addUserLikedPageReqFormat = jsonFormat2(AddUserLikedPageReq)
+  implicit val addUserLikedPageRspFormat = jsonFormat1(AddUserLikedPageRsp)
 }
 
 class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with SprayJsonSupport {
@@ -48,8 +50,8 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
       val userNode = entity.asString.parseJson.convertTo[UserNode]
       val future: Future[CreateFbNodeRsp] = (fbServer ? CreateFbNodeReq("user", userNode)).mapTo[CreateFbNodeRsp]
       future.onSuccess {
-        case createFbNodeRsp: CreateFbNodeRsp =>
-          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, createFbNodeRsp.toJson.toString))
+        case result: CreateFbNodeRsp =>
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, result.toJson.toString))
       }
 
     case HttpRequest(POST, Uri.Path("/page/create"), _, entity, _) =>
@@ -57,8 +59,17 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
       val pageNode = entity.asString.parseJson.convertTo[PageNode]
       val future: Future[CreateFbNodeRsp] = (fbServer ? CreateFbNodeReq("page", pageNode)).mapTo[CreateFbNodeRsp]
       future.onSuccess {
-        case createFbNodeRsp: CreateFbNodeRsp =>
-          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, createFbNodeRsp.toJson.toString))
+        case result: CreateFbNodeRsp =>
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, result.toJson.toString))
+      }
+
+    case HttpRequest(POST, Uri.Path("/like_this_page"), _, entity, _) =>
+      val requestor = sender
+      val addUserLikedPageReq = entity.asString.parseJson.convertTo[AddUserLikedPageReq]
+      val future: Future[AddUserLikedPageRsp] = (fbServer ? addUserLikedPageReq).mapTo[AddUserLikedPageRsp]
+      future.onSuccess {
+        case result: AddUserLikedPageRsp =>
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, result.toJson.toString()))
       }
   }
 }

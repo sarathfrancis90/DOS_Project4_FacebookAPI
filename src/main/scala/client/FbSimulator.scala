@@ -1,7 +1,7 @@
 package client
 
 import akka.actor.{ActorSystem, _}
-import server.facebook.{PageNode, CreateFbNodeRsp, UserNode}
+import server.facebook._
 import spray.client.pipelining._
 import spray.http._
 import spray.json.{DefaultJsonProtocol, _}
@@ -18,10 +18,14 @@ case class StartCreatingPages(numberOfPages: Int)
 
 case class DoneCreatingPage(pageName: String, pageId: String)
 
+case class StartUsersLikingPages(registeredUsers: List[(String, String)], registeredPages: List[(String, String)])
+
 object FbJsonProtocol extends DefaultJsonProtocol {
   implicit val userNodeFormat = jsonFormat5(UserNode)
   implicit val pageNodeFormat = jsonFormat5(PageNode)
   implicit val createFbNodeRspFormat = jsonFormat2(CreateFbNodeRsp)
+  implicit val addUserLikedPageReqFormat = jsonFormat2(AddUserLikedPageReq)
+  implicit val addUserLikedPageRspFormat = jsonFormat1(AddUserLikedPageRsp)
 }
 
 class Master extends Actor with ActorLogging {
@@ -33,6 +37,7 @@ class Master extends Actor with ActorLogging {
 
   var createUsersActorRef: ActorRef = _
   var createPagesActorRef: ActorRef = _
+  var usersLikingPagesActorRef: ActorRef =_
 
   def receive = {
     case "Init" =>
@@ -56,13 +61,14 @@ class Master extends Actor with ActorLogging {
       if (myRegisteredPages.length == totalPagesCount) {
         log.info("Done creating " + myRegisteredPages.length.toString + " pages")
         createPagesActorRef ! "PleaseKillYourself"
+        usersLikingPagesActorRef = context.system.actorOf(Props(new UsersLikingPagesSubActor), "UsersLikingPages")
+        usersLikingPagesActorRef ! StartUsersLikingPages(myRegisteredUsers.toList, myRegisteredPages.toList)
       }
 
   }
 }
 
-class CreateUsersSubActor extends Actor with ActorLogging {
-
+class UsersLikingPagesSubActor extends Actor with ActorLogging {
   import FbJsonProtocol._
 
   implicit val system = ActorSystem()
@@ -70,35 +76,23 @@ class CreateUsersSubActor extends Actor with ActorLogging {
   import system.dispatcher
 
   def receive = {
-    case StartCreatingUsers(numberOfUsers) =>
+    case StartUsersLikingPages(registeredUsers, registeredPages) =>
       val mySender = sender
-      log.info(s"Creating $numberOfUsers users")
 
-      (0 until numberOfUsers).foreach(i => {
+      val addUserLikedPageReq = AddUserLikedPageReq(registeredUsers(0)._2, registeredPages(0)._1)
 
-        val userNode = UserNode("",
-          "Something about " + "user" + i.toString,
-          "01/01/1988",
-          "user" + i.toString + "@ufl.edu",
-          "user" + i.toString)
+      val entity = HttpEntity(contentType = ContentType(MediaTypes.`application/json`, HttpCharsets.`UTF-8`), addUserLikedPageReq.toJson.toString)
 
-        val entity = HttpEntity(contentType = ContentType(MediaTypes.`application/json`, HttpCharsets.`UTF-8`), userNode.toJson.toString)
+      val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
 
-        val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
+      val future: Future[HttpResponse] = pipeline(Post("http://127.0.0.1:8080/like_this_page", entity))
+      future onComplete {
+        case Success(response) =>
+          println(addUserLikedPageReq.toString + " " +response)
 
-        val future: Future[HttpResponse] = pipeline(Post("http://127.0.0.1:8080/user/create", entity))
-        future onComplete {
-          case Success(response) =>
-            mySender ! DoneCreatingUser(userNode.first_name, response.entity.asString.parseJson.convertTo[CreateFbNodeRsp].id)
-
-          case Failure(error) =>
-            println("Some error has occurred: " + error.getMessage)
-        }
-      })
-
-    case "PleaseKillYourself" =>
-      log.info(self.path.name + " says bye")
-      context.stop(self)
+        case Failure(error) =>
+          println("Some error has occurred: " + error.getMessage)
+      }
   }
 }
 
@@ -132,6 +126,47 @@ class CreatePagesSubActor extends Actor with ActorLogging {
         future onComplete {
           case Success(response) =>
             mySender ! DoneCreatingPage(pageNode.name, response.entity.asString.parseJson.convertTo[CreateFbNodeRsp].id)
+
+          case Failure(error) =>
+            println("Some error has occurred: " + error.getMessage)
+        }
+      })
+
+    case "PleaseKillYourself" =>
+      log.info(self.path.name + " says bye")
+      context.stop(self)
+  }
+}
+
+class CreateUsersSubActor extends Actor with ActorLogging {
+
+  import FbJsonProtocol._
+
+  implicit val system = ActorSystem()
+
+  import system.dispatcher
+
+  def receive = {
+    case StartCreatingUsers(numberOfUsers) =>
+      val mySender = sender
+      log.info(s"Creating $numberOfUsers users")
+
+      (0 until numberOfUsers).foreach(i => {
+
+        val userNode = UserNode("",
+          "Something about " + "user" + i.toString,
+          "01/01/1988",
+          "user" + i.toString + "@ufl.edu",
+          "user" + i.toString)
+
+        val entity = HttpEntity(contentType = ContentType(MediaTypes.`application/json`, HttpCharsets.`UTF-8`), userNode.toJson.toString)
+
+        val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
+
+        val future: Future[HttpResponse] = pipeline(Post("http://127.0.0.1:8080/user/create", entity))
+        future onComplete {
+          case Success(response) =>
+            mySender ! DoneCreatingUser(userNode.first_name, response.entity.asString.parseJson.convertTo[CreateFbNodeRsp].id)
 
           case Failure(error) =>
             println("Some error has occurred: " + error.getMessage)
