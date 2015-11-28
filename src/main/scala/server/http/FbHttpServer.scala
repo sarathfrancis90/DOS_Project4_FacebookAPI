@@ -1,18 +1,17 @@
 package server.http
 
+import _root_.server.facebook._
+import akka.actor._
+import akka.io.IO
 import akka.pattern.ask
 import akka.util.Timeout
-import _root_.server.facebook._
-import spray.can.Http
+import spray.can.{Http, _}
 import spray.http.HttpMethods._
 import spray.http._
 import spray.httpx.SprayJsonSupport
 import spray.json._
-import akka.actor._
-import akka.io.IO
-import spray.can._
 
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
@@ -26,6 +25,8 @@ object FbJsonProtocol extends DefaultJsonProtocol {
   implicit val createFbNodeRspFormat = jsonFormat2(CreateFbNodeRsp)
   implicit val addUserLikedPageReqFormat = jsonFormat2(AddUserLikedPageReq)
   implicit val addUserLikedPageRspFormat = jsonFormat1(AddUserLikedPageRsp)
+  implicit val createPagePostReqFormat = jsonFormat2(CreatePagePostReq)
+  implicit val createPagePostRspFormat = jsonFormat1(CreatePagePostRsp)
 }
 
 class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with SprayJsonSupport {
@@ -71,6 +72,16 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
         case result: AddUserLikedPageRsp =>
           requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, result.toJson.toString()))
       }
+
+    case HttpRequest(POST, Uri.Path("/page/post"), _, entity, _) =>
+      val requestor = sender
+      val createPagePostReq = entity.asString.parseJson.convertTo[CreatePagePostReq]
+      val future: Future[CreatePagePostRsp] = (fbServer ? createPagePostReq).mapTo[CreatePagePostRsp]
+      future.onSuccess {
+        case result: CreatePagePostRsp =>
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, result.toJson.toString()))
+      }
+
   }
 }
 
