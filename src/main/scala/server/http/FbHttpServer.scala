@@ -51,6 +51,15 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
         case createFbNodeRsp: CreateFbNodeRsp =>
           requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, createFbNodeRsp.toJson.toString))
       }
+
+    case HttpRequest(POST, Uri.Path("/page/create"), _, entity, _) =>
+      val requestor = sender
+      val pageNode = entity.asString.parseJson.convertTo[PageNode]
+      val future: Future[CreateFbNodeRsp] = (fbServer ? CreateFbNodeReq("page", pageNode)).mapTo[CreateFbNodeRsp]
+      future.onSuccess {
+        case createFbNodeRsp: CreateFbNodeRsp =>
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, createFbNodeRsp.toJson.toString))
+      }
   }
 }
 
