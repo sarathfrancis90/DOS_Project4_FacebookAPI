@@ -1,6 +1,5 @@
 package server.http
 
-import akka.actor._
 import akka.pattern.ask
 import akka.util.Timeout
 import server.facebook._
@@ -9,6 +8,9 @@ import spray.http.HttpMethods._
 import spray.http._
 import spray.httpx.SprayJsonSupport
 import spray.json._
+import akka.actor._
+import akka.io.IO
+import spray.can._
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -24,7 +26,7 @@ object FbJsonProtocol extends DefaultJsonProtocol {
   implicit val createFbNodeRspFormat = jsonFormat2(CreateFbNodeRsp)
 }
 
-class FbHttpServer extends Actor with ActorLogging with AdditionalFormats with SprayJsonSupport {
+class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with SprayJsonSupport {
 
   import FbJsonProtocol._
   import context.dispatcher
@@ -50,4 +52,10 @@ class FbHttpServer extends Actor with ActorLogging with AdditionalFormats with S
           requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, createFbNodeRsp.toJson.toString))
       }
   }
+}
+
+object FbHttpServer extends App {
+  implicit val system = ActorSystem()
+
+  IO(Http) ! Http.Bind(system.actorOf(Props[FbServerHttp], name = "FbServerHttp"), interface = "localhost", port = 8080)
 }

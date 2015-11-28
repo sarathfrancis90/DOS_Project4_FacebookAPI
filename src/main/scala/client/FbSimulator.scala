@@ -20,7 +20,7 @@ object FbJsonProtocol extends DefaultJsonProtocol {
 }
 
 class Master extends Actor with ActorLogging {
-  val totalUsersCount = 100000
+  val totalUsersCount = 1000
   var myRegisteredUsers: ListBuffer[(String, String)] = new ListBuffer[(String, String)]()
 
   var registerUsersActorRef: ActorRef = _
