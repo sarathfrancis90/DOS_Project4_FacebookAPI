@@ -12,7 +12,7 @@ case class PageNode(var id: String,
                     var about: String,
                     var description: String,
                     var name: String,
-                    var likes: Integer) extends Node
+                    var likes: Int) extends Node
 
 case class PostNode(var id: String,
                     var created_time: String, /*FIXME: a good time*/
@@ -30,13 +30,13 @@ case class PhotoNode(var id: String,
                      var album: String, /*FIXME: an Album node*/
                      var created_time: String, /*FIXME: */
                      var from: String, /*FIXME: can be a User profile or Page profile*/
-                     var height: Integer,
+                     var height: Int,
                      var name: String,
-                     var width: Integer,
+                     var width: Int,
                      var caption: String) extends Node
 
 case class AlbumNode(var id: String,
-                     var count: Integer,
+                     var count: Int,
                      var cover_photo: String,
                      var created_time: String, /*FIXME: */
                      var description: String,
