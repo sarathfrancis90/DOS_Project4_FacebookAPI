@@ -39,6 +39,14 @@ object FbJsonProtocol extends DefaultJsonProtocol {
   implicit val addUserLikedPageRspFormat = jsonFormat1(AddUserLikedPageRsp)
   implicit val createPagePostReqFormat = jsonFormat2(CreatePagePostReq)
   implicit val createPagePostRspFormat = jsonFormat1(CreatePagePostRsp)
+  implicit val createPagePhotoReqFormat = jsonFormat2(CreatePagePhotoReq)
+  implicit val createPagePhotoRspFormat = jsonFormat1(CreatePagePhotoRsp)
+  implicit val createUserPostReqFormat  = jsonFormat2(CreateUserPostReq)
+  implicit val createUserPostRspFormat  = jsonFormat1(CreateUserPostRsp)
+  implicit val createUserPhotoReqFormat  = jsonFormat2(CreateUserPhotoReq)
+  implicit val createUserPhotoRspFormat  = jsonFormat1(CreateUserPhotoRsp)
+
+
 }
 
 class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with SprayJsonSupport {
@@ -91,6 +99,32 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
       val future: Future[CreatePagePostRsp] = (fbServer ? createPagePostReq).mapTo[CreatePagePostRsp]
       future.onSuccess {
         case result: CreatePagePostRsp =>
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, result.toJson.toString))
+      }
+    case HttpRequest(POST, Uri.Path("/page/photo"), _, entity, _) =>
+      val requestor = sender
+      val createPagePhotoReq = entity.asString.parseJson.convertTo[CreatePagePhotoReq]
+      val future: Future[CreatePagePhotoRsp] = (fbServer ? createPagePhotoReq).mapTo[CreatePagePhotoRsp]
+      future.onSuccess {
+        case result: CreatePagePhotoRsp =>
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, result.toJson.toString))
+      }
+
+    case HttpRequest(POST, Uri.Path("/user/post"), _, entity, _) =>
+      val requestor = sender
+      val createUserPostReq = entity.asString.parseJson.convertTo[CreateUserPostReq]
+      val future: Future[CreateUserPostRsp] = (fbServer ? createUserPostReq).mapTo[CreateUserPostRsp]
+      future.onSuccess {
+        case result: CreateUserPostRsp =>
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, result.toJson.toString))
+      }
+
+    case HttpRequest(POST, Uri.Path("/user/photo"), _, entity, _) =>
+      val requestor = sender
+      val createUserPhotoReq = entity.asString.parseJson.convertTo[CreateUserPhotoReq]
+      val future: Future[CreateUserPhotoRsp] = (fbServer ? createUserPhotoReq).mapTo[CreateUserPhotoRsp]
+      future.onSuccess {
+        case result: CreateUserPhotoRsp =>
           requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, result.toJson.toString))
       }
 
