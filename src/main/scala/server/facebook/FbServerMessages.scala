@@ -68,67 +68,67 @@ case class RemoveUserLikedPageReqToFbWorker(userId: String, pageId: String, ownL
 
 case class RemoveUserLikedPageRspToFbServer(result: Boolean)
 
-case class UpdateUserTaggedPostNtf(userId: String, postId: String) /* TODO: simulate */
+case class UpdateUserTaggedPostNtf(userId: String, postId: String)
 
-case class UpdateUserTaggedPhotoNtf(userId: String, photoId: String) /* TODO: simulate */
+case class UpdateUserTaggedPhotoNtf(userId: String, photoId: String)
 
-case class UpdateAlbumPhotoNtf(albumId: String, photoId: String) /* TODO: simulate */
+case class UpdateAlbumPhotoNtf(albumId: String, photoId: String)
 
-case class UpdateUserAlbumNtf(userId: String, albumId: String) /* TODO: simulate */
+case class UpdateUserAlbumNtf(userId: String, albumId: String)
 
-case class UpdatePageLikedUserReq(action: String, pageId: String, userId: String) /* TODO: simulate */
+case class UpdatePageLikedUserReq(action: String, pageId: String, userId: String)
 
-case class UpdatePageLikedUserRsp(result: Boolean) /* TODO: simulate */
+case class UpdatePageLikedUserRsp(result: Boolean)
 
-case class UpdateUserTimelineNtf(userId: String, eventType: String, eventId: String) /* TODO: simulate */
+case class UpdateUserTimelineNtf(userId: String, eventType: String, eventId: String)
 
-case class GetUserAlbumsReq(userId: String, startFrom: String, limit: Int) /* TODO: simulate */
+case class GetUserAlbumsReq(userId: String, startFrom: String, limit: Int)
 
-case class GetUserAlbumsRsp(albums: List[AlbumNode]) /* TODO: simulate */
+case class GetUserAlbumsRsp(albums: List[AlbumNode])
 
-case class CreateUserAlbumReq(userId: String, album: AlbumNode) /* TODO: simulate */
+case class CreateUserAlbumReq(userId: String, album: AlbumNode)
 
-case class CreateUserAlbumRsp(albumId: String) /* TODO: simulate */
+case class CreateUserAlbumRsp(albumId: String)
 
-case class GetUserPhotosReq(userId: String, typeOfPhotos: String, startFrom: String, limit: Int) /* TODO: simulate */
+case class GetUserPhotosReq(userId: String, typeOfPhotos: String, startFrom: String, limit: Int)
 
-case class GetUserPhotosRsp(photos: List[PhotoNode]) /* TODO: simulate */
+case class GetUserPhotosRsp(photos: List[PhotoNode])
 
 case class CreateUserPhotoReq(userId: String, photo: PhotoNode)
 
 case class CreateUserPhotoRsp(photoId: String)
 
-case class GetUserFriendsReq(userId: String, startFrom: String, limit: Int) /* TODO: simulate */
+case class GetUserFriendsReq(userId: String, startFrom: String, limit: Int) /* TODO: not handled yet */
 
-case class GetUserFriendsRsp(users: List[UserNode]) /* TODO: simulate */
+case class GetUserFriendsRsp(users: List[UserNode]) /* TODO: not handled yet */
 
-case class IsUserFriendsWithReq(userId: String, anotherUserId: String) /* TODO: simulate */
+case class IsUserFriendsWithReq(userId: String, anotherUserId: String) /* TODO: not handled yet */
 
-case class IsUserFriendsWithRsp(user: UserNode) /* TODO: simulate */
+case class IsUserFriendsWithRsp(user: UserNode) /* TODO: not handled yet */
 
-case class GetUserFeedReq(userId: String, typeOfPosts: String, startFrom: String, limit: Int)  /* TODO: simulate */
+case class GetUserFeedReq(userId: String, typeOfPosts: String, startFrom: String, limit: Int)
 
-case class GetUserFeedRsp(posts: List[PostNode]) /* TODO: simulate */
+case class GetUserFeedRsp(posts: List[PostNode])
 
 case class CreateUserPostReq(userId: String, post: PostNode)
 
 case class CreateUserPostRsp(postId: String)
 
-case class GetAlbumPhotosReq(userId: String, albumId: String, startFrom: String, limit: Int)  /* TODO: simulate */
+case class GetAlbumPhotosReq(userId: String, albumId: String, startFrom: String, limit: Int)
 
-case class GetAlbumPhotosRsp(photos: List[PhotoNode]) /* TODO: simulate */
+case class GetAlbumPhotosRsp(photos: List[PhotoNode])
 
 case class AddUserLikedPageReq(userId: String, pageName: String)
 
 case class AddUserLikedPageRsp(result: Boolean)
 
-case class GetUserLikedPagesReq(userId: String, startFrom: String, limit: Int) /* TODO: simulate */
+case class GetUserLikedPagesReq(userId: String, startFrom: String, limit: Int)
 
-case class GetUserLikedPagesRsp(pages: List[PageNode])  /* TODO: simulate */
+case class GetUserLikedPagesRsp(pages: List[PageNode])
 
-case class GetPageLikedUsersReq(pageId: String, startFrom: String, limit: Int) /* TODO: simulate */
+case class GetPageLikedUsersReq(pageId: String, startFrom: String, limit: Int)
 
-case class GetPageLikedUsersRsp(users: List[UserNode]) /* TODO: simulate */
+case class GetPageLikedUsersRsp(users: List[UserNode])
 
 case class CreatePagePostReq(pageId: String, post: PostNode)
 

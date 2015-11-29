@@ -145,6 +145,128 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
           })
           requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, eventsOnly.toList.take(10).toJson.toString))
       }
+    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/ownphotos" =>
+      val requestor = sender
+      val userId = path.split('/').last
+      val getUserPhotosReq = GetUserPhotosReq(
+        userId = userId,
+        typeOfPhotos = "own",
+        startFrom = "",
+        limit = 0)
+      val future: Future[GetUserPhotosRsp] = (fbServer ? getUserPhotosReq).mapTo[GetUserPhotosRsp]
+      future.onSuccess {
+        case result: GetUserPhotosRsp =>
+          val photos: ListBuffer[Node] = new ListBuffer[Node]()
+          result.photos.foreach(photo => {
+            photos += photo
+          })
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, photos.toList.take(10).toJson.toString))
+      }
+    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/taggedphotos" =>
+      val requestor = sender
+      val userId = path.split('/').last
+      val getUserPhotosReq = GetUserPhotosReq(
+        userId = userId,
+        typeOfPhotos = "tagged",
+        startFrom = "",
+        limit = 0)
+      val future: Future[GetUserPhotosRsp] = (fbServer ? getUserPhotosReq).mapTo[GetUserPhotosRsp]
+      future.onSuccess {
+        case result: GetUserPhotosRsp =>
+          val photos: ListBuffer[Node] = new ListBuffer[Node]()
+          result.photos.foreach(photo => {
+            photos += photo
+          })
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, photos.toList.take(10).toJson.toString))
+      }
+
+    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/ownposts" =>
+      val requestor = sender
+      val userId = path.split('/').last
+      val getUserFeedReq = GetUserFeedReq(
+        userId = userId,
+        typeOfPosts = "own",
+        startFrom = "",
+        limit = 0)
+      val future: Future[GetUserFeedRsp] = (fbServer ? getUserFeedReq).mapTo[GetUserFeedRsp]
+      future.onSuccess {
+        case result: GetUserFeedRsp =>
+          val posts: ListBuffer[Node] = new ListBuffer[Node]()
+          result.posts.foreach(post => {
+            posts += post
+          })
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, posts.toList.take(10).toJson.toString))
+      }
+    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/taggedposts" =>
+      val requestor = sender
+      val userId = path.split('/').last
+      val getUserFeedReq = GetUserFeedReq(
+        userId = userId,
+        typeOfPosts = "tagged",
+        startFrom = "",
+        limit = 0)
+      val future: Future[GetUserFeedRsp] = (fbServer ? getUserFeedReq).mapTo[GetUserFeedRsp]
+      future.onSuccess {
+        case result: GetUserFeedRsp =>
+          val posts: ListBuffer[Node] = new ListBuffer[Node]()
+          result.posts.foreach(post => {
+            posts += post
+          })
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, posts.toList.take(10).toJson.toString))
+      }
+    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/albumphotos" =>
+      val requestor = sender
+      val urlSplit = path.split('/')
+      val arrayLength = urlSplit.length
+      val userId = urlSplit(arrayLength - 2)
+      val albumId = urlSplit(arrayLength - 1)
+
+      val getalbumPhotosReq = GetAlbumPhotosReq(
+        userId = userId,
+        albumId = albumId,
+        startFrom = "",
+        limit = 0)
+      val future: Future[GetAlbumPhotosRsp] = (fbServer ? getalbumPhotosReq).mapTo[GetAlbumPhotosRsp]
+      future.onSuccess {
+        case result: GetAlbumPhotosRsp =>
+          val photos: ListBuffer[Node] = new ListBuffer[Node]()
+          result.photos.foreach(photo => {
+            photos += photo
+          })
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, photos.toList.take(10).toJson.toString))
+      }
+    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/likedpages" =>
+      val requestor = sender
+      val userId = path.split('/').last
+      val getUserLikedPagesReq = GetUserLikedPagesReq(
+        userId = userId,
+        startFrom = "",
+        limit = 0)
+      val future: Future[GetUserLikedPagesRsp] = (fbServer ? getUserLikedPagesReq).mapTo[GetUserLikedPagesRsp]
+      future.onSuccess {
+        case result: GetUserLikedPagesRsp =>
+          val pages: ListBuffer[Node] = new ListBuffer[Node]()
+          result.pages.foreach(page => {
+            pages += page
+          })
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, pages.toList.take(10).toJson.toString))
+      }
+    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/page/likedusers" =>
+      val requestor = sender
+      val pageId = path.split('/').last
+      val getPageLikedUsersReq = GetPageLikedUsersReq(
+        pageId = pageId,
+        startFrom = "",
+        limit = 0)
+      val future: Future[GetPageLikedUsersRsp] = (fbServer ? getPageLikedUsersReq).mapTo[GetPageLikedUsersRsp]
+      future.onSuccess {
+        case result: GetPageLikedUsersRsp =>
+          val users: ListBuffer[Node] = new ListBuffer[Node]()
+          result.users.foreach(user => {
+            users += user
+          })
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, users.toList.take(10).toJson.toString))
+      }
   }
 }
 

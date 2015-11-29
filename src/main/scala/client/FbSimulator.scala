@@ -208,7 +208,9 @@ class ActiveUsersSubActor extends Actor with ActorLogging {
 //    log.info("User " + userId + " is viewing TimeLine")
     val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
     val future: Future[HttpResponse] = pipeline(Get(s"http://127.0.0.1:8080/user/timeline/$userId"))
-    Await.result(future, 5 second)
+    val timelineResult = Await.result(future, 5 second)
+
+//    println(timelineResult.entity.data.asString.parseJson.prettyPrint)
   }
 
 }
