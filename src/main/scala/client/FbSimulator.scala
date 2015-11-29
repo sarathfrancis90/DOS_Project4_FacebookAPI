@@ -36,12 +36,12 @@ case class PassiveUserStartActivities(passiveUsers: List[(String, String)],regis
 
 
 class Master extends Actor with ActorLogging {
-  val totalUsersCount = 100000
-  val totalPagesCount = 10000
+  val totalUsersCount = 100
+  val totalPagesCount = 100
 
   val percentageOfUsersWhoClickLike: Int = 64
   val averageNumberOfPagesLikedByAUser: Int = 40
-  val percentageofActiveUsers: Int = 58
+  val percentageofActiveUsers: Double = 58
   var totalNumberOfLikesToDo = 0
   var totalNumberOfLikesDone = 0
 
@@ -85,19 +85,15 @@ class Master extends Actor with ActorLogging {
 
     case DoneUserLikingPage =>
       totalNumberOfLikesDone += 1
-      if (totalNumberOfLikesDone == (totalNumberOfLikesToDo/10) ) {
+      if (totalNumberOfLikesDone == 1000 ) {
         log.info("Done liking 10% of total likes which is " + totalNumberOfLikesDone)
         pagesActivitiesActorRef = context.system.actorOf(Props(new PagesActivitiessSubActor), "PagesActivities")
         pagesActivitiesActorRef ! StartPageActivities(myRegisteredPages.toList,myRegisteredUsers.toList)
-        val (activeUsers,passiveUsers) = myRegisteredUsers.splitAt((percentageofActiveUsers/100) * myRegisteredUsers.length)
-        activeUsers.foreach(println(_))
-        println("passive")
-        passiveUsers.foreach(println(_))
-        Thread.sleep(1000000)
+        val (activeUsers,passiveUsers) = myRegisteredUsers.splitAt(((percentageofActiveUsers/100) * myRegisteredUsers.length).toInt)
         activeUsersActorRef = context.system.actorOf(Props(new ActiveUsersSubActor), "ActiveUsers")
-//        passiveUsersActorRef = context.system.actorOf(Props(new PassiveUsersSubActor), "PassiveUsers")
+        passiveUsersActorRef = context.system.actorOf(Props(new PassiveUsersSubActor), "PassiveUsers")
         activeUsersActorRef ! ActiveUserStartActivities(activeUsers.toList,myRegisteredUsers.toList)
-//        passiveUsersActorRef ! PassiveUserStartActivities(passiveUsers.toList,myRegisteredUsers.toList)
+        passiveUsersActorRef ! PassiveUserStartActivities(passiveUsers.toList,myRegisteredUsers.toList)
       }
       if(totalNumberOfLikesDone == totalNumberOfLikesToDo) {
         log.info("Done liking all the " + totalNumberOfLikesDone + " pages ")
@@ -120,7 +116,7 @@ class ActiveUsersSubActor extends Actor with ActorLogging {
   def receive = {
 
     case ActiveUserStartActivities(activeUsers,registeredUsers) =>
-      log.info("Actve Users starting activities")
+      log.info("Active Users starting activities")
       mySender = sender
       activeUsersList = activeUsers
       registereduserList = registeredUsers
@@ -161,7 +157,7 @@ class ActiveUsersSubActor extends Actor with ActorLogging {
       message = activeUsers(randomActiveUserIndex)._1 + " posting a random number " + Random.nextInt(1000).toString + " at " + now,
       to = List.empty,
       updated_time = now)
-    log.info("Active User " + postNode.from + " is creating a post with the message " + postNode.message )
+//    log.info("Active User " + postNode.from + " is creating a post with the message " + postNode.message )
     val createActiveUserPostReq = CreateUserPostReq(
       userId = activeUsers(randomActiveUserIndex)._2,
       post = postNode)
@@ -192,12 +188,12 @@ class ActiveUsersSubActor extends Actor with ActorLogging {
       width = 1920,
       caption = "tagging " + registeredUsers(randomUserIndex)._1
     )
-    log.info(s"User " + photoNode.from + "is sharing " + photoNode.name + " and " + photoNode.caption )
-    val createUserPhotoReq = CreateUserPhotoReq (
+//    log.info(s"User " + photoNode.from + "is sharing " + photoNode.name + " and " + photoNode.caption )
+    val createActiveUserPhotoReq = CreateUserPhotoReq (
       userId = activeUsers(randomActiveUserIndex)._2,
       photo  = photoNode
     )
-    val entity = HttpEntity(contentType = ContentType(MediaTypes.`application/json`, HttpCharsets.`UTF-8`), createUserPhotoReq.toJson.toString)
+    val entity = HttpEntity(contentType = ContentType(MediaTypes.`application/json`, HttpCharsets.`UTF-8`), createActiveUserPhotoReq.toJson.toString)
 
     val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
 
@@ -209,7 +205,106 @@ class ActiveUsersSubActor extends Actor with ActorLogging {
 
     val randomActiveUserIndex = Random.nextInt(activeUsers.length)
     val userId = activeUsers(randomActiveUserIndex)._2
-    log.info("User " + userId + "viewing TimeLine")
+//    log.info("User " + userId + " is viewing TimeLine")
+    val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
+    val future: Future[HttpResponse] = pipeline(Get(s"http://127.0.0.1:8080/user/timeline/$userId"))
+    Await.result(future, 5 second)
+  }
+
+}
+class PassiveUsersSubActor extends Actor with ActorLogging {
+  import FbJsonProtocol._
+  implicit val system = ActorSystem()
+  import system.dispatcher
+
+  var passiveUsersList :List[(String, String)] = _
+  var registereduserList: List[(String, String)] = _
+  var mySender: ActorRef = _
+  var photoCount: Int = 0
+
+  def receive = {
+
+    case PassiveUserStartActivities(passiveUsers,registeredUsers) =>
+      log.info("Passive Users starting activities")
+      mySender = sender
+      passiveUsersList = passiveUsers
+      registereduserList = registeredUsers
+      self ! "ViewTimelineForPassiveiveUsers"
+
+
+    case "ViewTimelineForPassiveiveUsers" =>
+      ViewTimelineFromPassiveUser(passiveUsersList)
+      Thread.sleep(100)
+      self ! "ViewTimelineForPassiveiveUsers"
+
+    case "PleaseKillYourself" =>
+      log.info(self.path.name + " says bye")
+      context.stop(self)
+  }
+
+//  def CreateAPostFromPassiveUser(passiveUsers: List[(String, String)],registeredUsers: List[(String, String)]) {
+//
+//    val randomPassiveUserIndex = Random.nextInt(passiveUsers.length)
+//
+//    val now = Calendar.getInstance().getTime.toString
+//
+//    val postNode = PostNode(
+//      id = "",
+//      created_time = now,
+//      description = "",
+//      from = passiveUsers(randomPassiveUserIndex)._2,
+//      message = passiveUsers(randomPassiveUserIndex)._1 + " posting a random number " + Random.nextInt(1000).toString + " at " + now,
+//      to = List.empty,
+//      updated_time = now)
+//    //    log.info("Active User " + postNode.from + " is creating a post with the message " + postNode.message )
+//    val createPassiveUserPostReq = CreateUserPostReq(
+//      userId = passiveUsers(randomPassiveUserIndex)._2,
+//      post = postNode)
+//
+//    val entity = HttpEntity(contentType = ContentType(MediaTypes.`application/json`, HttpCharsets.`UTF-8`), createPassiveUserPostReq.toJson.toString)
+//
+//    val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
+//
+//    val future: Future[HttpResponse] = pipeline(Post("http://127.0.0.1:8080/user/post", entity))
+//    Await.result(future, 5 second)
+//
+//  }
+//  def PostAphotoFromPassiveiveUser(passiveUsers: List[(String, String)],registeredUsers: List[(String, String)])  {
+//
+//    val randomUserIndex = Random.nextInt(registeredUsers.length)
+//    val randomPassiveUserIndex = Random.nextInt(passiveUsers.length)
+//
+//    val now = Calendar.getInstance().getTime.toString
+//    photoCount = photoCount+1
+//
+//    val photoNode = PhotoNode(
+//      id = "",
+//      album = "",
+//      created_time = now,
+//      from = passiveUsers(randomPassiveUserIndex)._2,
+//      height = 1080,
+//      name = passiveUsers(randomPassiveUserIndex)._1.toString + "_photo_" + photoCount.toString,
+//      width = 1920,
+//      caption = "tagging " + registeredUsers(randomUserIndex)._1
+//    )
+//    //    log.info(s"User " + photoNode.from + "is sharing " + photoNode.name + " and " + photoNode.caption )
+//    val createPassiveUserPhotoReq = CreateUserPhotoReq (
+//      userId = passiveUsers(randomPassiveUserIndex)._2,
+//      photo  = photoNode
+//    )
+//    val entity = HttpEntity(contentType = ContentType(MediaTypes.`application/json`, HttpCharsets.`UTF-8`), createPassiveUserPhotoReq.toJson.toString)
+//
+//    val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
+//
+//    val future: Future[HttpResponse] = pipeline(Post("http://127.0.0.1:8080/user/photo", entity))
+//    Await.result(future, 5 second)
+//
+//  }
+  def ViewTimelineFromPassiveUser(passiveUsers: List[(String, String)]) {
+
+    val randomPassiveUserIndex = Random.nextInt(passiveUsers.length)
+    val userId = passiveUsers(randomPassiveUserIndex)._2
+    //    log.info("User " + userId + " is viewing TimeLine")
     val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
     val future: Future[HttpResponse] = pipeline(Get(s"http://127.0.0.1:8080/user/timeline/$userId"))
     Await.result(future, 5 second)
@@ -217,12 +312,6 @@ class ActiveUsersSubActor extends Actor with ActorLogging {
   }
 
 }
-//class PassiveUsersSubActor extends Actor with ActorLogging {
-//  import FbJsonProtocol._
-//  implicit val system = ActorSystem()
-//  import system.dispatcher
-//
-//}
 class PagesActivitiessSubActor extends Actor with ActorLogging {
   import FbJsonProtocol._
   implicit val system = ActorSystem()
@@ -276,7 +365,7 @@ class PagesActivitiessSubActor extends Actor with ActorLogging {
       width = 1920,
       caption = "tagging " + registeredUsers(randomUserIndex)._1
     )
-    log.info(s"Page " + photoNode.from + "is sharing " + photoNode.name + " and " + photoNode.caption )
+//    log.info(s"Page " + photoNode.from + "is sharing " + photoNode.name + " and " + photoNode.caption )
     val createPagePhotoReq = CreatePagePhotoReq (
       pageId = registeredPages(randomPageIndex)._2,
       photo  = photoNode
@@ -302,7 +391,7 @@ class PagesActivitiessSubActor extends Actor with ActorLogging {
       message = registeredPages(randomPageIndex)._1 + " posting a random number " + Random.nextInt(1000).toString + " at " + now,
       to = List.empty,
       updated_time = now)
-    log.info("Page " + postNode.from + " is creating a post with the message " + postNode.message )
+//    log.info("Page " + postNode.from + " is creating a post with the message " + postNode.message )
     val createPagePostReq = CreatePagePostReq(
       pageId = registeredPages(randomPageIndex)._2,
       post = postNode)
