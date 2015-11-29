@@ -16,7 +16,7 @@ case class CreateUserPostReqToFbWorker(post: PostNode, ownPosts: ListBuffer[Stri
 
 case class CreateUserPostRspToFbServer(postId: String)
 
-case class GetUserPostsReqToFbWorker(startFrom: String, limit: Integer, postIds: ListBuffer[String])
+case class GetUserPostsReqToFbWorker(startFrom: String, limit: Int, postIds: ListBuffer[String])
 
 case class GetUserPostsRspToFbServer(posts: List[PostNode])
 
@@ -24,11 +24,11 @@ case class CreateUserPhotoReqToFbWorker(photo: PhotoNode, ownPhotos: ListBuffer[
 
 case class CreateUserPhotoRspToFbServer(photoId: String)
 
-case class GetUserPhotosReqToFbWorker(startFrom: String, limit: Integer, photoIds: ListBuffer[String])
+case class GetUserPhotosReqToFbWorker(startFrom: String, limit: Int, photoIds: ListBuffer[String])
 
 case class GetUserPhotosRspToFbServer(photos: List[PhotoNode])
 
-case class GetUserAlbumsReqToFbWorker(startFrom: String, limit: Integer, albumIds: ListBuffer[String])
+case class GetUserAlbumsReqToFbWorker(startFrom: String, limit: Int, albumIds: ListBuffer[String])
 
 case class GetUserAlbumsRspToFbServer(albums: List[AlbumNode])
 
@@ -36,7 +36,7 @@ case class CreateUserAlbumReqToFbWorker(album: AlbumNode, ownAlbums: ListBuffer[
 
 case class CreateUserAlbumRspToFbServer(albumId: String)
 
-case class GetAlbumPhotosReqToFbWorker(startFrom: String, limit: Integer, photoIds: ListBuffer[String])
+case class GetAlbumPhotosReqToFbWorker(startFrom: String, limit: Int, photoIds: ListBuffer[String])
 
 case class GetAlbumPhotosRspToFbServer(photos: List[PhotoNode])
 
@@ -44,11 +44,11 @@ case class AddUserLikedPageReqToFbWorker(userId: String, pageName: String, ownLi
 
 case class AddUserLikedPageRspToFbServer(result: Boolean)
 
-case class GetUserLikedPagesReqToFbWorker(startFrom: String, limit: Integer, pageIds: ListBuffer[String])
+case class GetUserLikedPagesReqToFbWorker(startFrom: String, limit: Int, pageIds: ListBuffer[String])
 
 case class GetUserLikedPagesRspToFbServer(pages: List[PageNode])
 
-case class GetPageLikedUsersReqToFbWorker(startFrom: String, limit: Integer, userIds: ListBuffer[String])
+case class GetPageLikedUsersReqToFbWorker(startFrom: String, limit: Int, userIds: ListBuffer[String])
 
 case class GetPageLikedUsersRspToFbServer(users: List[UserNode])
 
@@ -56,7 +56,7 @@ case class CreatePagePostReqToFbWorker(post: PostNode, ownPosts: ListBuffer[Stri
 
 case class CreatePagePostRspToFbServer(postId: String)
 
-case class GetUserTimelineReqToFbWorker(startFrom: String, limit: Integer, timeline: ListBuffer[(String, String)])
+case class GetUserTimelineReqToFbWorker(startFrom: String, limit: Int, timeline: ListBuffer[(String, String)])
 
 case class GetUserTimelineRspToFbServer(events: List[(String, Node)])
 
@@ -82,7 +82,7 @@ case class UpdatePageLikedUserRsp(result: Boolean)
 
 case class UpdateUserTimelineNtf(userId: String, eventType: String, eventId: String)
 
-case class GetUserAlbumsReq(userId: String, startFrom: String, limit: Integer)
+case class GetUserAlbumsReq(userId: String, startFrom: String, limit: Int)
 
 case class GetUserAlbumsRsp(albums: List[AlbumNode])
 
@@ -90,7 +90,7 @@ case class CreateUserAlbumReq(userId: String, album: AlbumNode)
 
 case class CreateUserAlbumRsp(albumId: String)
 
-case class GetUserPhotosReq(userId: String, typeOfPhotos: String, startFrom: String, limit: Integer)
+case class GetUserPhotosReq(userId: String, typeOfPhotos: String, startFrom: String, limit: Int)
 
 case class GetUserPhotosRsp(photos: List[PhotoNode])
 
@@ -98,7 +98,7 @@ case class CreateUserPhotoReq(userId: String, photo: PhotoNode)
 
 case class CreateUserPhotoRsp(photoId: String)
 
-case class GetUserFriendsReq(userId: String, startFrom: String, limit: Integer)
+case class GetUserFriendsReq(userId: String, startFrom: String, limit: Int)
 
 case class GetUserFriendsRsp(users: List[UserNode])
 
@@ -106,7 +106,7 @@ case class IsUserFriendsWithReq(userId: String, anotherUserId: String)
 
 case class IsUserFriendsWithRsp(user: UserNode)
 
-case class GetUserFeedReq(userId: String, typeOfPosts: String, startFrom: String, limit: Integer)
+case class GetUserFeedReq(userId: String, typeOfPosts: String, startFrom: String, limit: Int)
 
 case class GetUserFeedRsp(posts: List[PostNode])
 
@@ -114,7 +114,7 @@ case class CreateUserPostReq(userId: String, post: PostNode)
 
 case class CreateUserPostRsp(postId: String)
 
-case class GetAlbumPhotosReq(userId: String, albumId: String, startFrom: String, limit: Integer)
+case class GetAlbumPhotosReq(userId: String, albumId: String, startFrom: String, limit: Int)
 
 case class GetAlbumPhotosRsp(photos: List[PhotoNode])
 
@@ -122,11 +122,11 @@ case class AddUserLikedPageReq(userId: String, pageName: String)
 
 case class AddUserLikedPageRsp(result: Boolean)
 
-case class GetUserLikedPagesReq(userId: String, startFrom: String, limit: Integer)
+case class GetUserLikedPagesReq(userId: String, startFrom: String, limit: Int)
 
 case class GetUserLikedPagesRsp(pages: List[PageNode])
 
-case class GetPageLikedUsersReq(pageId: String, startFrom: String, limit: Integer)
+case class GetPageLikedUsersReq(pageId: String, startFrom: String, limit: Int)
 
 case class GetPageLikedUsersRsp(users: List[UserNode])
 
@@ -134,7 +134,7 @@ case class CreatePagePostReq(pageId: String, post: PostNode)
 
 case class CreatePagePostRsp(postId: String)
 
-case class GetUserTimelineReq(userId: String, startFrom: String, limit: Integer)
+case class GetUserTimelineReq(userId: String, startFrom: String, limit: Int)
 
 case class GetUserTimelineRsp(events: List[(String, Node)])
 

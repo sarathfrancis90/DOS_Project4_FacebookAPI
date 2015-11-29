@@ -38,7 +38,7 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
 
       myFbServerRef ! CreateUserPostRspToFbServer(post.id)
 
-    case GetUserPostsReqToFbWorker(startFrom: String, limit: Integer, postIds: ListBuffer[String]) =>
+    case GetUserPostsReqToFbWorker(startFrom, limit, postIds: ListBuffer[String]) =>
       val posts: ListBuffer[PostNode] = new ListBuffer[PostNode]()
       postIds.foreach(postId => {
         val future: Future[GetFbNodeRsp] = (myFbServerRef ? GetFbNodeReq("post", postId)).mapTo[GetFbNodeRsp]
@@ -85,7 +85,7 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
 
     case GetUserPhotosReqToFbWorker(startFrom, limit, photoIds) =>
       val photos: ListBuffer[PhotoNode] = new ListBuffer[PhotoNode]()
-      photoIds.foreach(photoId => {
+      photoIds.take(limit).foreach(photoId => {
         val future: Future[GetFbNodeRsp] = (myFbServerRef ? GetFbNodeReq("photo", photoId)).mapTo[GetFbNodeRsp]
         val getFbNodeRsp = Await.result(future, someTimeout.duration)
         photos += getFbNodeRsp.node.asInstanceOf[PhotoNode]
@@ -95,7 +95,7 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
 
     case GetUserAlbumsReqToFbWorker(startFrom, limit, albumIds) =>
       val albums: ListBuffer[AlbumNode] = new ListBuffer[AlbumNode]()
-      albumIds.foreach(albumId => {
+      albumIds.take(limit).foreach(albumId => {
         val future: Future[GetFbNodeRsp] = (myFbServerRef ? GetFbNodeReq("album", albumId)).mapTo[GetFbNodeRsp]
         val getFbNodeRsp = Await.result(future, someTimeout.duration)
         albums += getFbNodeRsp.node.asInstanceOf[AlbumNode]
@@ -118,7 +118,7 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
 
     case GetAlbumPhotosReqToFbWorker(startFrom, limit, photoIds) =>
       val photos: ListBuffer[PhotoNode] = new ListBuffer[PhotoNode]()
-      photoIds.foreach(photoId => {
+      photoIds.take(limit).foreach(photoId => {
         val future: Future[GetFbNodeRsp] = (myFbServerRef ? GetFbNodeReq("photo", photoId)).mapTo[GetFbNodeRsp]
         val getFbNodeRsp = Await.result(future, someTimeout.duration)
         photos += getFbNodeRsp.node.asInstanceOf[PhotoNode]
@@ -139,7 +139,7 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
 
     case GetUserLikedPagesReqToFbWorker(startFrom, limit, pageIds) =>
       val pages: ListBuffer[PageNode] = new ListBuffer[PageNode]()
-      pageIds.foreach(pageId => {
+      pageIds.take(limit).foreach(pageId => {
         val future: Future[GetFbNodeRsp] = (myFbServerRef ? GetFbNodeReq("page", pageId)).mapTo[GetFbNodeRsp]
         val getFbNodeRsp = Await.result(future, someTimeout.duration)
         pages += getFbNodeRsp.node.asInstanceOf[PageNode]
@@ -149,7 +149,7 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
 
     case GetPageLikedUsersReqToFbWorker(startFrom, limit, likedUserIds) =>
       val users: ListBuffer[UserNode] = new ListBuffer[UserNode]()
-      likedUserIds.foreach(likedUserId => {
+      likedUserIds.take(0).foreach(likedUserId => {
         val future: Future[GetFbNodeRsp] = (myFbServerRef ? GetFbNodeReq("user", likedUserId)).mapTo[GetFbNodeRsp]
         val getFbNodeRsp = Await.result(future, someTimeout.duration)
         users += getFbNodeRsp.node.asInstanceOf[UserNode]
@@ -175,7 +175,7 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
 
     case GetUserTimelineReqToFbWorker(startFrom, limit, timelineEvents) =>
       val events: ListBuffer[(String, Node)] = new ListBuffer[(String, Node)]()
-      timelineEvents.foreach(timelineEvent => {
+      timelineEvents.take(limit).foreach(timelineEvent => {
         val future: Future[GetFbNodeRsp] = (myFbServerRef ? GetFbNodeReq(timelineEvent._1, timelineEvent._2)).mapTo[GetFbNodeRsp]
         val getFbNodeRsp = Await.result(future, someTimeout.duration)
         val event = (timelineEvent._1, getFbNodeRsp.node)

@@ -4,6 +4,7 @@ import java.util.Calendar
 
 import akka.actor.{ActorSystem, _}
 import server.facebook._
+import server.http.FbJsonProtocol
 import spray.client.pipelining._
 import spray.http._
 import spray.json.{DefaultJsonProtocol, _}
@@ -28,17 +29,6 @@ case class StartUsersLikingPages(registeredUsers: List[(String, String)], regist
 case object DoneUserLikingPage
 
 case class StartPostsForPages(registeredPages: List[(String, String)])
-
-object FbJsonProtocol extends DefaultJsonProtocol {
-  implicit val userNodeFormat = jsonFormat5(UserNode)
-  implicit val pageNodeFormat = jsonFormat5(PageNode)
-  implicit val postNodeFormat = jsonFormat7(PostNode)
-  implicit val createFbNodeRspFormat = jsonFormat2(CreateFbNodeRsp)
-  implicit val addUserLikedPageReqFormat = jsonFormat2(AddUserLikedPageReq)
-  implicit val addUserLikedPageRspFormat = jsonFormat1(AddUserLikedPageRsp)
-  implicit val createPagePostReqFormat = jsonFormat2(CreatePagePostReq)
-  implicit val createPagePostRspFormat = jsonFormat1(CreatePagePostRsp)
-}
 
 class Master extends Actor with ActorLogging {
   val totalUsersCount = 100
@@ -109,10 +99,12 @@ class PagesMakingPostsSubActor extends Actor with ActorLogging {
       mySender = sender
       registeredPages = registeredPagesIn
       makeAPost(registeredPages)
+      Thread.sleep(10)
       self ! "Again"
 
     case "Again" =>
       makeAPost(registeredPages)
+      Thread.sleep(10)
       self ! "Again"
 
     case "PleaseKillYourself" =>
@@ -142,7 +134,7 @@ class PagesMakingPostsSubActor extends Actor with ActorLogging {
     val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
 
     val future: Future[HttpResponse] = pipeline(Post("http://127.0.0.1:8080/page/post", entity))
-    val rsp = Await.result(future, 5 second)
+    Await.result(future, 5 second)
   }
 }
 

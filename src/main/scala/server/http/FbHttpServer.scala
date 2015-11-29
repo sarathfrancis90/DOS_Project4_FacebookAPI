@@ -11,6 +11,7 @@ import spray.http._
 import spray.httpx.SprayJsonSupport
 import spray.json._
 
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -22,6 +23,17 @@ object FbJsonProtocol extends DefaultJsonProtocol {
   implicit val friendListNodeFormat = jsonFormat3(FriendListNode)
   implicit val photoNodeFormat = jsonFormat8(PhotoNode)
   implicit val albumNodeFormat = jsonFormat9(AlbumNode)
+  implicit object NodeFormat extends RootJsonFormat[Node] {
+    def write(n: Node) = n match {
+      case post: PostNode => post.toJson
+      case photo: PhotoNode => photo.toJson
+    }
+
+    def read(value: JsValue) = value match {
+      case _ =>
+        throw new DeserializationException("Not supported")
+    }
+  }
   implicit val createFbNodeRspFormat = jsonFormat2(CreateFbNodeRsp)
   implicit val addUserLikedPageReqFormat = jsonFormat2(AddUserLikedPageReq)
   implicit val addUserLikedPageRspFormat = jsonFormat1(AddUserLikedPageRsp)
@@ -79,9 +91,25 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
       val future: Future[CreatePagePostRsp] = (fbServer ? createPagePostReq).mapTo[CreatePagePostRsp]
       future.onSuccess {
         case result: CreatePagePostRsp =>
-          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, result.toJson.toString()))
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, result.toJson.toString))
       }
 
+    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/timeline" =>
+      val requestor = sender
+      val userId = path.split('/').last
+      val getUserTimelineReq = GetUserTimelineReq(
+        userId = userId,
+        startFrom = "",
+        limit = 0)
+      val future: Future[GetUserTimelineRsp] = (fbServer ? getUserTimelineReq).mapTo[GetUserTimelineRsp]
+      future.onSuccess {
+        case result: GetUserTimelineRsp =>
+          val eventsOnly: ListBuffer[Node] = new ListBuffer[Node]()
+          result.events.foreach(event => {
+            eventsOnly += event._2
+          })
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, eventsOnly.toList.take(10).toJson.toString))
+      }
   }
 }
 

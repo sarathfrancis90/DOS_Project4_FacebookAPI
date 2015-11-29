@@ -149,9 +149,9 @@ class FbServer extends Actor with ActorLogging {
     case GetUserFeedReq(userId, typeOfPosts, startFrom, limit) =>
       typeOfPosts match {
         case "own" =>
-          createFbWorkerForUserActivities(sender) ! GetUserPostsReqToFbWorker(startFrom, limit, usersOwnPosts.get(userId).get)
+          createFbWorkerForUserActivities(sender) ! GetUserPostsReqToFbWorker(startFrom, limit=10, usersOwnPosts.get(userId).get)
         case "tagged" =>
-          createFbWorkerForUserActivities(sender) ! GetUserPostsReqToFbWorker(startFrom, limit, usersTaggedPosts.get(userId).get)
+          createFbWorkerForUserActivities(sender) ! GetUserPostsReqToFbWorker(startFrom, limit=10, usersTaggedPosts.get(userId).get)
       }
 
     case GetUserPostsRspToFbServer(posts) =>
@@ -167,16 +167,16 @@ class FbServer extends Actor with ActorLogging {
     case GetUserPhotosReq(userId, typeOfPhotos, startFrom, limit) =>
       typeOfPhotos match {
         case "own" =>
-          createFbWorkerForUserActivities(sender) ! GetUserPhotosReqToFbWorker(startFrom, limit, usersOwnPhotos.get(userId).get)
+          createFbWorkerForUserActivities(sender) ! GetUserPhotosReqToFbWorker(startFrom, limit=10, usersOwnPhotos.get(userId).get)
         case "tagged" =>
-          createFbWorkerForUserActivities(sender) ! GetUserPhotosReqToFbWorker(startFrom, limit, usersTaggedPhotos.get(userId).get)
+          createFbWorkerForUserActivities(sender) ! GetUserPhotosReqToFbWorker(startFrom, limit=10, usersTaggedPhotos.get(userId).get)
       }
 
     case GetUserPhotosRspToFbServer(photos) =>
       getRequestor(sender) ! GetUserPhotosRsp(photos)
 
     case GetUserAlbumsReq(userId, startFrom, limit) =>
-      createFbWorkerForUserActivities(sender) ! GetUserAlbumsReqToFbWorker(startFrom, limit, usersOwnAlbums.get(userId).get)
+      createFbWorkerForUserActivities(sender) ! GetUserAlbumsReqToFbWorker(startFrom, limit=10, usersOwnAlbums.get(userId).get)
 
     case GetUserAlbumsRspToFbServer(albums) =>
       getRequestor(sender) ! GetUserAlbumsRsp(albums)
@@ -190,7 +190,7 @@ class FbServer extends Actor with ActorLogging {
 
     case GetAlbumPhotosReq(userId, albumId, startFrom, limit) =>
       if (!albums.get(albumId).isEmpty && albums.get(albumId).get.asInstanceOf[AlbumNode].from.equals(userId))
-        createFbWorkerForUserActivities(sender) ! GetAlbumPhotosReqToFbWorker(startFrom, limit, albumsPhotos.get(albumId).get)
+        createFbWorkerForUserActivities(sender) ! GetAlbumPhotosReqToFbWorker(startFrom, limit=10, albumsPhotos.get(albumId).get)
       else
         sender ! GetAlbumPhotosRsp(List.empty)
 
@@ -204,13 +204,13 @@ class FbServer extends Actor with ActorLogging {
       getRequestor(sender) ! AddUserLikedPageRsp(result)
 
     case GetUserLikedPagesReq(userId, startFrom, limit) =>
-      createFbWorkerForUserActivities(sender) ! GetUserLikedPagesReqToFbWorker(startFrom, limit, usersLikedPages.get(userId).get)
+      createFbWorkerForUserActivities(sender) ! GetUserLikedPagesReqToFbWorker(startFrom, limit=10, usersLikedPages.get(userId).get)
 
     case GetUserLikedPagesRspToFbServer(pages) =>
       getRequestor(sender) ! GetUserLikedPagesRsp(pages)
 
     case GetPageLikedUsersReq(pageId, startFrom, limit) =>
-      createFbWorkerForUserActivities(sender) ! GetPageLikedUsersReqToFbWorker(startFrom, limit, pagesLikedUsers.get(pageId).get)
+      createFbWorkerForUserActivities(sender) ! GetPageLikedUsersReqToFbWorker(startFrom, limit=10, pagesLikedUsers.get(pageId).get)
 
     case GetPageLikedUsersRspToFbServer(users) =>
       getRequestor(sender) ! GetPageLikedUsersRsp(users)
@@ -223,7 +223,7 @@ class FbServer extends Actor with ActorLogging {
       getRequestor(sender) ! CreatePagePostRsp(postId)
 
     case GetUserTimelineReq(userId, startFrom, limit) =>
-      createFbWorkerForUserActivities(sender) ! GetUserTimelineReqToFbWorker(startFrom, limit, usersTimeline.get(userId).get)
+      createFbWorkerForUserActivities(sender) ! GetUserTimelineReqToFbWorker(startFrom, limit=10, usersTimeline.get(userId).get)
 
     case GetUserTimelineRspToFbServer(events) =>
       getRequestor(sender) ! GetUserTimelineRsp(events)
