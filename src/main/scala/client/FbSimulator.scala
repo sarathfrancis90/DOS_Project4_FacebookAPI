@@ -36,8 +36,8 @@ case class PassiveUserStartActivities(passiveUsers: List[(String, String)],regis
 
 
 class Master extends Actor with ActorLogging {
-  val totalUsersCount = 100
-  val totalPagesCount = 10
+  val totalUsersCount = 100000
+  val totalPagesCount = 10000
 
   val percentageOfUsersWhoClickLike: Int = 64
   val averageNumberOfPagesLikedByAUser: Int = 40
@@ -312,7 +312,7 @@ class PagesActivitiessSubActor extends Actor with ActorLogging {
     val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
 
     val future: Future[HttpResponse] = pipeline(Post("http://127.0.0.1:8080/page/post", entity))
-    Await.result(future, 5 second)
+//    Await.result(future, 5 second)
   }
 }
 
