@@ -48,8 +48,9 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
 
   implicit val someTimeout = Timeout(5 seconds)
 
-  val system = ActorSystem("HttpServerTest")
+  val system = ActorSystem("HttpServerForFb")
   val fbServer = system.actorOf(Props(new FbServer), "FbServer00")
+  fbServer ! "Init"
 
   def receive = {
     case _: Http.Connected =>

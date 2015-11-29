@@ -31,8 +31,8 @@ case object DoneUserLikingPage
 case class StartPostsForPages(registeredPages: List[(String, String)])
 
 class Master extends Actor with ActorLogging {
-  val totalUsersCount = 100
-  val totalPagesCount = 10
+  val totalUsersCount = 100000
+  val totalPagesCount = 10000
 
   val percentageOfUsersWhoClickLike: Int = 64
   val averageNumberOfPagesLikedByAUser: Int = 40
@@ -76,9 +76,9 @@ class Master extends Actor with ActorLogging {
 
     case DoneUserLikingPage =>
       totalNumberOfLikesDone += 1
-      if (totalNumberOfLikesDone == totalNumberOfLikesToDo) {
+      if (totalNumberOfLikesDone == 1000) {
         log.info("Done liking " + totalNumberOfLikesDone + " pages")
-        usersLikingPagesActorRef ! "PleaseKillYourself"
+//        usersLikingPagesActorRef ! "PleaseKillYourself"
         pagesMakingPostsActorRef = context.system.actorOf(Props(new PagesMakingPostsSubActor), "PagesMakingPosts")
         pagesMakingPostsActorRef ! StartPostsForPages(myRegisteredPages.toList)
       }
@@ -134,7 +134,7 @@ class PagesMakingPostsSubActor extends Actor with ActorLogging {
     val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
 
     val future: Future[HttpResponse] = pipeline(Post("http://127.0.0.1:8080/page/post", entity))
-    Await.result(future, 5 second)
+//    Await.result(future, 5 second)
   }
 }
 
