@@ -128,6 +128,14 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
         case result: CreateUserPhotoRsp =>
           requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, result.toJson.toString))
       }
+//    case HttpRequest(POST, Uri.Path("/user/album"), _, entity, _) =>
+//      val requestor = sender
+//      val createUserAlbumReq = entity.asString.parseJson.convertTo[CreateUserAlbumReq]
+//      val future: Future[CreateUserAlbumRsp] = (fbServer ? createUserAlbumReq).mapTo[CreateUserAlbumRsp]
+//      future.onSuccess {
+//        case result: CreateUserAlbumRsp =>
+//          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, result.toJson.toString))
+//      }
 
     case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/timeline" =>
       val requestor = sender
@@ -213,6 +221,22 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
             posts += post
           })
           requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, posts.toList.take(10).toJson.toString))
+      }
+    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/getalbums" =>
+      val requestor = sender
+      val userId = path.split('/').last
+      val getUserAlbumsReq = GetUserAlbumsReq(
+        userId = userId,
+        startFrom ="",
+        limit = 0)
+      val future: Future[GetUserAlbumsRsp] = (fbServer ? getUserAlbumsReq).mapTo[GetUserAlbumsRsp]
+      future.onSuccess {
+        case result: GetUserAlbumsRsp =>
+          val albums: ListBuffer[Node] = new ListBuffer[Node]()
+          result.albums.foreach(album => {
+            albums += album
+          })
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, albums.toList.take(10).toJson.toString))
       }
     case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/albumphotos" =>
       val requestor = sender
