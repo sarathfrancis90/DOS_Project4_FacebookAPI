@@ -69,7 +69,7 @@ class FbServer extends Actor with ActorLogging {
         case "photo" =>
           val photoNode = node.asInstanceOf[PhotoNode]
           if (photoNode.id.isEmpty)
-            photoNode.id = getShaOf(photoNode.name + photoNode.created_time)
+            photoNode.id = getShaOf(photoNode.from + photoNode.name + photoNode.created_time)
           sender ! addToDb(photos, photoNode.id, photoNode)
 
         case "album" =>
