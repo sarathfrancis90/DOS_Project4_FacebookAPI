@@ -19,6 +19,9 @@ class FbServer extends Actor with ActorLogging {
   var usersOwnAlbums: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
   var usersLikedPages: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
   var usersTimeline: mutable.HashMap[String, ListBuffer[(String, String)]] = new mutable.HashMap[String, ListBuffer[(String, String)]]()
+  var usersFriends: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
+  var usersInFriends: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
+  var usersOutFriends: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
 
   var pages: mutable.HashMap[String, Node] = new mutable.HashMap[String, Node]()
   var pagesLikedUsers: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
@@ -293,6 +296,9 @@ class FbServer extends Actor with ActorLogging {
         usersOwnAlbums.put(key, ListBuffer.empty)
         usersLikedPages.put(key, ListBuffer.empty)
         usersTimeline.put(key, ListBuffer.empty)
+        usersFriends.put(key, ListBuffer.empty)
+        usersInFriends.put(key, ListBuffer.empty)
+        usersOutFriends.put(key, ListBuffer.empty)
       }
       else if (db == albums) {
         albumsPhotos.put(key, ListBuffer.empty)
