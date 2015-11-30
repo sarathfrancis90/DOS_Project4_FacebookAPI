@@ -49,7 +49,7 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
       myFbServerRef ! GetUserPostsRspToFbServer(posts.toList)
 
     case CreateUserPhotoReqToFbWorker(photo, ownPhotos) =>
-      photo.id = getShaOf(photo.name + photo.created_time)
+      photo.id = getShaOf(photo.from + photo.name + photo.created_time)
       val taggedUsers = parseTextAndFindUsernames(photo.caption)
 
       if (ownPhotos.isEmpty) {
