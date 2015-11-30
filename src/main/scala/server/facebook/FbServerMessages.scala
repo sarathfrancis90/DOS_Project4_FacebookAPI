@@ -145,3 +145,31 @@ case class CreatePagePhotoRsp(photoId: String)
 case class RemoveUserLikedPageReq(userId: String, pageId: String) /* TODO: simulate */
 
 case class RemoveUserLikedPageRsp(result: Boolean) /* TODO: simulate */
+
+case class AddFriendReq(userId: String, friendName: String)
+
+case class AddFriendReqToFbWorker(userId: String, friendName: String, ownFriends: ListBuffer[String], ownInFriends: ListBuffer[String], ownOutFriends: ListBuffer[String])
+
+case class AddFriendRspToFbServer(result: String)
+
+case class AddFriendRsp(result: String)
+
+case class GetPendingInFriendsReq(userId: String)
+
+case class GetPendingInFriendsReqToFbWorker(ownInFriends: ListBuffer[String])
+
+case class GetPendingInFriendsRspToFbServer(inFriendNames: List[String])
+
+case class GetPendingInFriendsRsp(inFriendNames: List[String])
+
+case class GetPendingOutFriendsReq(userId: String)
+
+case class GetPendingOutFriendsReqToFbWorker(outFriends: ListBuffer[String])
+
+case class GetPendingOutFriendsRspToFbServer(outFriendNames: List[String])
+
+case class GetPendingOutFriendsRsp(outFriendNames: List[String])
+
+case class GetFriendsReq(userId: String)
+
+case class GetFriendsRspToFbServer(friends: List[UserNode])
