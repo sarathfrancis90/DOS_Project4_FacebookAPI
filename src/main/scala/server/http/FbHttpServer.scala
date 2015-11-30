@@ -49,6 +49,8 @@ object FbJsonProtocol extends DefaultJsonProtocol {
   implicit val createUserAlbumRspFormat  = jsonFormat1(CreateUserAlbumRsp)
   implicit val removeUserLikedPageReqFormat = jsonFormat2(RemoveUserLikedPageReq)
   implicit val removeUserLikedPageRspFormat = jsonFormat1(RemoveUserLikedPageRsp)
+  implicit val addFriendReqFormat = jsonFormat2(AddFriendReq)
+  implicit val addFriendRspFormat = jsonFormat1(AddFriendRsp)
 
 
 }
@@ -148,6 +150,15 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
         case result: RemoveUserLikedPageRsp =>
           requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, result.toJson.toString))
       }
+    case HttpRequest(POST, Uri.Path("/user/add_friend_request"), _, entity, _) =>
+      val requestor = sender
+      val addFriendReq = entity.asString.parseJson.convertTo[AddFriendReq]
+      val future: Future[AddFriendRsp] = (fbServer ? addFriendReq).mapTo[AddFriendRsp]
+      future.onSuccess {
+        case result: AddFriendRsp =>
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, result.toJson.toString))
+      }
+
     case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/timeline" =>
       val requestor = sender
       val userId = path.split('/').last
@@ -289,7 +300,7 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
     case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/page/liked_users" =>
       val requestor = sender
       val pageId = path.split('/').last
-      val getPageLikedUsersReq = GetPageLikedUsersReq(
+      val getPageLikedUsersReq = GetPageLikedUsersReq( 
         pageId = pageId,
         startFrom = "",
         limit = 0)
@@ -302,6 +313,51 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
           })
           requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, users.toList.take(10).toJson.toString))
       }
+    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/get_friends" =>
+      val requestor = sender
+      val userId = path.split('/').last
+      val getFriendsReq = GetFriendsReq(
+        userId = userId)
+      val future: Future[GetFriendsRsp] = (fbServer ? getFriendsReq).mapTo[GetFriendsRsp]
+      future.onSuccess {
+        case result: GetFriendsRsp =>
+          val friends: ListBuffer[Node] = new ListBuffer[Node]()
+          result.friends.foreach(friend => {
+            friends += friend
+          })
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, friends.toList.take(10).toJson.toString))
+      }
+    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/page/pending_in_friend_requests" =>
+      val requestor = sender
+      val userId = path.split('/').last
+      val getPendingInFriendsReq = GetPendingInFriendsReq(
+        userId = userId
+        )
+      val future: Future[GetPendingInFriendsRsp] = (fbServer ? getPendingInFriendsReq).mapTo[GetPendingInFriendsRsp]
+      future.onSuccess {
+        case result: GetPendingInFriendsRsp =>
+          val pendingInFriendRequests: ListBuffer[String] = new ListBuffer[String]()
+          result.inFriendNames.foreach(inFriendName => {
+            pendingInFriendRequests += inFriendName
+          })
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, pendingInFriendRequests.toList.take(10).toJson.toString))
+      }
+    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/page/pending_out_friend_requests" =>
+      val requestor = sender
+      val userId = path.split('/').last
+      val getPendingOutFriendsReq = GetPendingOutFriendsReq(
+        userId = userId
+      )
+      val future: Future[GetPendingOutFriendsRsp] = (fbServer ? getPendingOutFriendsReq).mapTo[GetPendingOutFriendsRsp]
+      future.onSuccess {
+        case result: GetPendingOutFriendsRsp =>
+          val pendingOutFriendRequests: ListBuffer[String] = new ListBuffer[String]()
+          result.outFriendNames.foreach(outFriendName => {
+            pendingOutFriendRequests += outFriendName
+          })
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, pendingOutFriendRequests.toList.take(10).toJson.toString))
+      }
+
   }
 }
 

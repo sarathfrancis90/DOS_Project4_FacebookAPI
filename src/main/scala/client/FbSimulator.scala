@@ -136,6 +136,11 @@ class ActiveUsersSubActor extends Actor with ActorLogging {
     case "ViewTimelineForActiveUsers" =>
       ViewTimelineFromActiveUser(activeUsersList)
 //      Thread.sleep(10)
+      self ! "StartCreatingAlbumForActiveUsers"
+
+
+    case "CreateAlbumsFromActiveUsers"  =>
+      CreateAlbumsFromActiveUser(activeUsersList)
       self ! "StartPostsForActiveUsers"
 
     case "PleaseKillYourself" =>
@@ -211,6 +216,10 @@ class ActiveUsersSubActor extends Actor with ActorLogging {
 //    val timelineResult = Await.result(future, 5 second)
 
 //    println(timelineResult.entity.data.asString.parseJson.prettyPrint)
+  }
+
+  def CreateAlbumsFromActiveUser(activeUsers: List[(String, String)]) {
+
   }
 
 }
