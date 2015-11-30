@@ -133,7 +133,9 @@ class FbServer extends Actor with ActorLogging {
         }
         else {
           if (pagesLikedUsers.get(pageId).get.contains(userId)) {
-            pagesLikedUsers.get(pageId).get.remove(pagesLikedUsers.get(pageId).get.indexWhere(x=>{x==userId}))
+            pagesLikedUsers.get(pageId).get.remove(pagesLikedUsers.get(pageId).get.indexWhere(x => {
+              x == userId
+            }))
             val page = pages.get(pageId).get.asInstanceOf[PageNode]
             page.likes -= 1
             pages.put(pageId, page)
@@ -150,6 +152,38 @@ class FbServer extends Actor with ActorLogging {
         usersTimeline.get(userId).get.insert(0, newEvent)
       }
 
+    case UpdateFriendNtf(userId, friendId) =>
+      if (users.get(userId).isDefined) {
+        if (usersFriends.get(userId).get.contains(friendId)) {
+          // bookkeeping
+          if (usersInFriends.get(userId).get.contains(friendId))
+            usersInFriends.get(userId).get.remove(usersInFriends.get(userId).get.indexWhere(x => {
+              x == friendId
+            }))
+          if (usersOutFriends.get(userId).get.contains(friendId))
+            usersOutFriends.get(userId).get.remove(usersOutFriends.get(userId).get.indexWhere(x => {
+              x == friendId
+            }))
+        }
+        else if (usersOutFriends.get(userId).get.contains(friendId)) {
+          usersOutFriends.get(userId).get.remove(usersOutFriends.get(userId).get.indexWhere(x => {
+            x == friendId
+          }))
+          usersFriends.get(userId).get.insert(0, friendId)
+          // bookkeeping
+          if (usersInFriends.get(userId).get.contains(friendId))
+            usersInFriends.get(userId).get.remove(usersInFriends.get(userId).get.indexWhere(x => {
+              x == friendId
+            }))
+        }
+        else if (usersInFriends.get(userId).get.contains(friendId)) {
+
+        }
+        else {
+          usersInFriends.get(userId).get.insert(0, friendId)
+        }
+      }
+
     case CreateUserPostReq(userId, post) =>
       statsServerRef ! "CreateUserPostReq"
       post.from = userId
@@ -163,9 +197,9 @@ class FbServer extends Actor with ActorLogging {
       statsServerRef ! "GetUserFeedReq"
       typeOfPosts match {
         case "own" =>
-          createFbWorkerForUserActivities(sender) ! GetUserPostsReqToFbWorker(startFrom, limit=10, usersOwnPosts.get(userId).get)
+          createFbWorkerForUserActivities(sender) ! GetUserPostsReqToFbWorker(startFrom, limit = 10, usersOwnPosts.get(userId).get)
         case "tagged" =>
-          createFbWorkerForUserActivities(sender) ! GetUserPostsReqToFbWorker(startFrom, limit=10, usersTaggedPosts.get(userId).get)
+          createFbWorkerForUserActivities(sender) ! GetUserPostsReqToFbWorker(startFrom, limit = 10, usersTaggedPosts.get(userId).get)
       }
 
     case GetUserPostsRspToFbServer(posts) =>
@@ -185,9 +219,9 @@ class FbServer extends Actor with ActorLogging {
       statsServerRef ! "GetUserPhotosReq"
       typeOfPhotos match {
         case "own" =>
-          createFbWorkerForUserActivities(sender) ! GetUserPhotosReqToFbWorker(startFrom, limit=10, usersOwnPhotos.get(userId).get)
+          createFbWorkerForUserActivities(sender) ! GetUserPhotosReqToFbWorker(startFrom, limit = 10, usersOwnPhotos.get(userId).get)
         case "tagged" =>
-          createFbWorkerForUserActivities(sender) ! GetUserPhotosReqToFbWorker(startFrom, limit=10, usersTaggedPhotos.get(userId).get)
+          createFbWorkerForUserActivities(sender) ! GetUserPhotosReqToFbWorker(startFrom, limit = 10, usersTaggedPhotos.get(userId).get)
       }
 
     case GetUserPhotosRspToFbServer(photos) =>
@@ -196,7 +230,7 @@ class FbServer extends Actor with ActorLogging {
 
     case GetUserAlbumsReq(userId, startFrom, limit) =>
       statsServerRef ! "GetUserAlbumsReq"
-      createFbWorkerForUserActivities(sender) ! GetUserAlbumsReqToFbWorker(startFrom, limit=10, usersOwnAlbums.get(userId).get)
+      createFbWorkerForUserActivities(sender) ! GetUserAlbumsReqToFbWorker(startFrom, limit = 10, usersOwnAlbums.get(userId).get)
 
     case GetUserAlbumsRspToFbServer(albums) =>
       statsServerRef ! "GetUserAlbumsRsp"
@@ -214,7 +248,7 @@ class FbServer extends Actor with ActorLogging {
     case GetAlbumPhotosReq(userId, albumId, startFrom, limit) =>
       statsServerRef ! "GetAlbumPhotosReq"
       if (!albums.get(albumId).isEmpty && albums.get(albumId).get.asInstanceOf[AlbumNode].from.equals(userId))
-        createFbWorkerForUserActivities(sender) ! GetAlbumPhotosReqToFbWorker(startFrom, limit=10, albumsPhotos.get(albumId).get)
+        createFbWorkerForUserActivities(sender) ! GetAlbumPhotosReqToFbWorker(startFrom, limit = 10, albumsPhotos.get(albumId).get)
       else
         sender ! GetAlbumPhotosRsp(List.empty)
 
@@ -232,7 +266,7 @@ class FbServer extends Actor with ActorLogging {
 
     case GetUserLikedPagesReq(userId, startFrom, limit) =>
       statsServerRef ! "GetUserLikedPagesReq"
-      createFbWorkerForUserActivities(sender) ! GetUserLikedPagesReqToFbWorker(startFrom, limit=10, usersLikedPages.get(userId).get)
+      createFbWorkerForUserActivities(sender) ! GetUserLikedPagesReqToFbWorker(startFrom, limit = 10, usersLikedPages.get(userId).get)
 
     case GetUserLikedPagesRspToFbServer(pages) =>
       statsServerRef ! "GetUserLikedPagesRsp"
@@ -240,7 +274,7 @@ class FbServer extends Actor with ActorLogging {
 
     case GetPageLikedUsersReq(pageId, startFrom, limit) =>
       statsServerRef ! "GetPageLikedUsersReq"
-      createFbWorkerForUserActivities(sender) ! GetPageLikedUsersReqToFbWorker(startFrom, limit=10, pagesLikedUsers.get(pageId).get)
+      createFbWorkerForUserActivities(sender) ! GetPageLikedUsersReqToFbWorker(startFrom, limit = 10, pagesLikedUsers.get(pageId).get)
 
     case GetPageLikedUsersRspToFbServer(users) =>
       statsServerRef ! "GetPageLikedUsersRsp"
@@ -257,7 +291,7 @@ class FbServer extends Actor with ActorLogging {
 
     case GetUserTimelineReq(userId, startFrom, limit) =>
       statsServerRef ! "GetUserTimelineReq"
-      createFbWorkerForUserActivities(sender) ! GetUserTimelineReqToFbWorker(startFrom, limit=10, usersTimeline.get(userId).get)
+      createFbWorkerForUserActivities(sender) ! GetUserTimelineReqToFbWorker(startFrom, limit = 10, usersTimeline.get(userId).get)
 
     case GetUserTimelineRspToFbServer(events) =>
       statsServerRef ! "GetUserTimelineRsp"
@@ -279,6 +313,31 @@ class FbServer extends Actor with ActorLogging {
     case RemoveUserLikedPageRspToFbServer(result) =>
       statsServerRef ! "RemoveUserLikedPageRsp"
       getRequestor(sender) ! RemoveUserLikedPageRsp(result)
+
+    case AddFriendReq(userId, friendName) =>
+      val addFriendReqToFbWorker = AddFriendReqToFbWorker(
+        userId,
+        friendName,
+        usersFriends.get(userId).get,
+        usersInFriends.get(userId).get,
+        usersOutFriends.get(userId).get)
+
+      createFbWorkerForUserActivities(sender) ! addFriendReqToFbWorker
+
+    case AddFriendRspToFbServer(result) =>
+      getRequestor(sender) ! AddFriendRsp(result)
+
+    case GetPendingInFriendsReq(userId) =>
+      createFbWorkerForUserActivities(sender) ! GetPendingInFriendsReqToFbWorker(usersInFriends.get(userId).get)
+
+    case GetPendingInFriendsRspToFbServer(inFriendName) =>
+      getRequestor(sender) ! GetPendingInFriendsRsp(inFriendName)
+
+    case GetFriendsReq(userId) =>
+      createFbWorkerForUserActivities(sender) ! GetFriendsReqToFbWorker(usersFriends.get(userId).get)
+
+    case GetFriendsRspToFbServer(friends) =>
+      getRequestor(sender) ! GetFriendsRsp(friends)
   }
 
   def addToDb(db: mutable.HashMap[String, Node], key: String, value: Node): CreateFbNodeRsp = {

@@ -204,10 +204,69 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
       val future: Future[UpdatePageLikedUserRsp] = (myFbServerRef ? UpdatePageLikedUserReq("remove", pageId, userId)).mapTo[UpdatePageLikedUserRsp]
       val updatePageLikedUserRsp = Await.result(future, someTimeout.duration)
       if (updatePageLikedUserRsp.result) {
-        ownLikedPages.remove(ownLikedPages.indexWhere(x=>{x==pageId}))
+        ownLikedPages.remove(ownLikedPages.indexWhere(x => {
+          x == pageId
+        }))
       }
 
       myFbServerRef ! RemoveUserLikedPageRspToFbServer(updatePageLikedUserRsp.result)
+
+    case AddFriendReqToFbWorker(userId, friendName, ownFriends, ownInFriends, ownOutFriends) =>
+      val friendId = getShaOf(friendName)
+
+      if (ownFriends.contains(friendId)) {
+        myFbServerRef ! AddFriendRspToFbServer(s"Already friends with $friendName")
+        // bookkeeping
+        if (ownInFriends.contains(friendId))
+          ownInFriends.remove(ownInFriends.indexWhere(x => {
+            x == friendId
+          }))
+        if (ownOutFriends.contains(friendId))
+          ownOutFriends.remove(ownOutFriends.indexWhere(x => {
+            x == friendId
+          }))
+      }
+      else if (ownInFriends.contains(friendId)) {
+        ownInFriends.remove(ownInFriends.indexWhere(x => {
+          x == friendId
+        }))
+        ownFriends.insert(0, friendId)
+        myFbServerRef ! UpdateFriendNtf(friendId, userId)
+        myFbServerRef ! AddFriendRspToFbServer(s"Now friends with $friendName")
+        // bookkeeping
+        if (ownOutFriends.contains(friendId))
+          ownOutFriends.remove(ownOutFriends.indexWhere(x => {
+            x == friendId
+          }))
+      }
+      else if (ownOutFriends.contains(friendId)) {
+        myFbServerRef ! AddFriendRspToFbServer(s"Friend request was sent already to $friendName")
+      }
+      else {
+        ownOutFriends.insert(0, friendId)
+        myFbServerRef ! UpdateFriendNtf(friendId, userId)
+        myFbServerRef ! AddFriendRspToFbServer(s"Friend request sent to $friendName")
+      }
+
+    case GetPendingInFriendsReqToFbWorker(inFriends) =>
+      val friendNames: ListBuffer[String] = new ListBuffer[String]()
+      inFriends.foreach(inFriend => {
+        val future: Future[GetFbNodeRsp] = (myFbServerRef ? GetFbNodeReq("user", inFriend)).mapTo[GetFbNodeRsp]
+        val getFbNodeRsp = Await.result(future, someTimeout.duration)
+        friendNames += getFbNodeRsp.node.asInstanceOf[UserNode].first_name
+      })
+
+      myFbServerRef ! GetPendingInFriendsRspToFbServer(friendNames.toList)
+
+    case GetFriendsReqToFbWorker(ownFriends) =>
+      val friends: ListBuffer[UserNode] = new ListBuffer[UserNode]()
+      ownFriends.foreach(ownFriend => {
+        val future: Future[GetFbNodeRsp] = (myFbServerRef ? GetFbNodeReq("user", ownFriend)).mapTo[GetFbNodeRsp]
+        val getFbNodeRsp = Await.result(future, someTimeout.duration)
+        friends += getFbNodeRsp.node.asInstanceOf[UserNode]
+      })
+
+      myFbServerRef ! GetFriendsRspToFbServer(friends.toList)
 
     case PleaseKillYourself =>
       context.stop(self)

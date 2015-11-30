@@ -146,6 +146,8 @@ case class RemoveUserLikedPageReq(userId: String, pageId: String)
 
 case class RemoveUserLikedPageRsp(result: Boolean)
 
+case class UpdateFriendNtf(userId: String, friendId: String)
+
 case class AddFriendReq(userId: String, friendName: String)
 
 case class AddFriendReqToFbWorker(userId: String, friendName: String, ownFriends: ListBuffer[String], ownInFriends: ListBuffer[String], ownOutFriends: ListBuffer[String])
@@ -172,4 +174,8 @@ case class GetPendingOutFriendsRsp(outFriendNames: List[String])
 
 case class GetFriendsReq(userId: String)
 
+case class GetFriendsReqToFbWorker(ownFriends: ListBuffer[String])
+
 case class GetFriendsRspToFbServer(friends: List[UserNode])
+
+case class GetFriendsRsp(friends: List[UserNode])
