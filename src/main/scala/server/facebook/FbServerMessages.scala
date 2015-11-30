@@ -142,9 +142,9 @@ case class CreatePagePhotoReq(pageId: String, photo: PhotoNode)
 
 case class CreatePagePhotoRsp(photoId: String)
 
-case class RemoveUserLikedPageReq(userId: String, pageId: String) /* TODO: simulate */
+case class RemoveUserLikedPageReq(userId: String, pageId: String)
 
-case class RemoveUserLikedPageRsp(result: Boolean) /* TODO: simulate */
+case class RemoveUserLikedPageRsp(result: Boolean)
 
 case class AddFriendReq(userId: String, friendName: String)
 

@@ -45,6 +45,10 @@ object FbJsonProtocol extends DefaultJsonProtocol {
   implicit val createUserPostRspFormat  = jsonFormat1(CreateUserPostRsp)
   implicit val createUserPhotoReqFormat  = jsonFormat2(CreateUserPhotoReq)
   implicit val createUserPhotoRspFormat  = jsonFormat1(CreateUserPhotoRsp)
+  implicit val createUserAlbumReqFormat  = jsonFormat2(CreateUserAlbumReq)
+  implicit val createUserAlbumRspFormat  = jsonFormat1(CreateUserAlbumRsp)
+  implicit val removeUserLikedPageReqFormat = jsonFormat2(RemoveUserLikedPageReq)
+  implicit val removeUserLikedPageRspFormat = jsonFormat1(RemoveUserLikedPageRsp)
 
 
 }
@@ -128,15 +132,22 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
         case result: CreateUserPhotoRsp =>
           requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, result.toJson.toString))
       }
-//    case HttpRequest(POST, Uri.Path("/user/album"), _, entity, _) =>
-//      val requestor = sender
-//      val createUserAlbumReq = entity.asString.parseJson.convertTo[CreateUserAlbumReq]
-//      val future: Future[CreateUserAlbumRsp] = (fbServer ? createUserAlbumReq).mapTo[CreateUserAlbumRsp]
-//      future.onSuccess {
-//        case result: CreateUserAlbumRsp =>
-//          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, result.toJson.toString))
-//      }
-
+    case HttpRequest(POST, Uri.Path("/user/album"), _, entity, _) =>
+      val requestor = sender
+      val createUserAlbumReq = entity.asString.parseJson.convertTo[CreateUserAlbumReq]
+      val future: Future[CreateUserAlbumRsp] = (fbServer ? createUserAlbumReq).mapTo[CreateUserAlbumRsp]
+      future.onSuccess {
+        case result: CreateUserAlbumRsp =>
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, result.toJson.toString))
+      }
+    case HttpRequest(POST, Uri.Path("/user/unlike_page"), _, entity, _) =>
+      val requestor = sender
+      val removeUserLikedPageReq = entity.asString.parseJson.convertTo[RemoveUserLikedPageReq]
+      val future: Future[RemoveUserLikedPageRsp] = (fbServer ? removeUserLikedPageReq).mapTo[RemoveUserLikedPageRsp]
+      future.onSuccess {
+        case result: RemoveUserLikedPageRsp =>
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, result.toJson.toString))
+      }
     case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/timeline" =>
       val requestor = sender
       val userId = path.split('/').last
@@ -153,7 +164,7 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
           })
           requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, eventsOnly.toList.take(10).toJson.toString))
       }
-    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/ownphotos" =>
+    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/own_photos" =>
       val requestor = sender
       val userId = path.split('/').last
       val getUserPhotosReq = GetUserPhotosReq(
@@ -170,7 +181,7 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
           })
           requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, photos.toList.take(10).toJson.toString))
       }
-    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/taggedphotos" =>
+    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/tagged_photos" =>
       val requestor = sender
       val userId = path.split('/').last
       val getUserPhotosReq = GetUserPhotosReq(
@@ -188,7 +199,7 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
           requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, photos.toList.take(10).toJson.toString))
       }
 
-    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/ownposts" =>
+    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/own_posts" =>
       val requestor = sender
       val userId = path.split('/').last
       val getUserFeedReq = GetUserFeedReq(
@@ -205,7 +216,7 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
           })
           requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, posts.toList.take(10).toJson.toString))
       }
-    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/taggedposts" =>
+    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/tagged_posts" =>
       val requestor = sender
       val userId = path.split('/').last
       val getUserFeedReq = GetUserFeedReq(
@@ -222,7 +233,7 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
           })
           requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, posts.toList.take(10).toJson.toString))
       }
-    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/getalbums" =>
+    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/get_albums" =>
       val requestor = sender
       val userId = path.split('/').last
       val getUserAlbumsReq = GetUserAlbumsReq(
@@ -238,7 +249,7 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
           })
           requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, albums.toList.take(10).toJson.toString))
       }
-    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/albumphotos" =>
+    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/album_photos" =>
       val requestor = sender
       val urlSplit = path.split('/')
       val arrayLength = urlSplit.length
@@ -259,7 +270,7 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
           })
           requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, photos.toList.take(10).toJson.toString))
       }
-    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/likedpages" =>
+    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/liked_pages" =>
       val requestor = sender
       val userId = path.split('/').last
       val getUserLikedPagesReq = GetUserLikedPagesReq(
@@ -275,7 +286,7 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
           })
           requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, pages.toList.take(10).toJson.toString))
       }
-    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/page/likedusers" =>
+    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/page/liked_users" =>
       val requestor = sender
       val pageId = path.split('/').last
       val getPageLikedUsersReq = GetPageLikedUsersReq(

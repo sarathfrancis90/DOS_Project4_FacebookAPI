@@ -86,7 +86,7 @@ class Master extends Actor with ActorLogging {
     case DoneUserLikingPage =>
       totalNumberOfLikesDone += 1
       if (totalNumberOfLikesDone == 1000 ) {
-        log.info("Done liking 10% of total likes which is " + totalNumberOfLikesDone)
+        log.info("Done liking 1000 pages")
         pagesActivitiesActorRef = context.system.actorOf(Props(new PagesActivitiessSubActor), "PagesActivities")
         pagesActivitiesActorRef ! StartPageActivities(myRegisteredPages.toList,myRegisteredUsers.toList)
         val (activeUsers,passiveUsers) = myRegisteredUsers.splitAt(((percentageofActiveUsers/100) * myRegisteredUsers.length).toInt)
@@ -125,17 +125,17 @@ class ActiveUsersSubActor extends Actor with ActorLogging {
 
     case "StartPostsForActiveUsers" =>
       CreateAPostFromActiveUser(activeUsersList,registereduserList)
-      Thread.sleep(10)
+//      Thread.sleep(10)
       self ! "StartPhotoPostsForActiveUsers"
 
     case "StartPhotoPostsForActiveUsers" =>
       PostAphotoFromActiveUser(activeUsersList,registereduserList)
-      Thread.sleep(10)
+//      Thread.sleep(10)
       self ! "ViewTimelineForActiveUsers"
 
     case "ViewTimelineForActiveUsers" =>
       ViewTimelineFromActiveUser(activeUsersList)
-      Thread.sleep(10)
+//      Thread.sleep(10)
       self ! "StartPostsForActiveUsers"
 
     case "PleaseKillYourself" =>
@@ -167,7 +167,7 @@ class ActiveUsersSubActor extends Actor with ActorLogging {
     val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
 
     val future: Future[HttpResponse] = pipeline(Post("http://127.0.0.1:8080/user/post", entity))
-    Await.result(future, 5 second)
+//    Await.result(future, 5 second)
 
   }
   def PostAphotoFromActiveUser(activeUsers: List[(String, String)],registeredUsers: List[(String, String)])  {
@@ -198,7 +198,7 @@ class ActiveUsersSubActor extends Actor with ActorLogging {
     val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
 
     val future: Future[HttpResponse] = pipeline(Post("http://127.0.0.1:8080/user/photo", entity))
-    Await.result(future, 5 second)
+//    Await.result(future, 5 second)
 
   }
   def ViewTimelineFromActiveUser(activeUsers: List[(String, String)]) {
@@ -208,7 +208,7 @@ class ActiveUsersSubActor extends Actor with ActorLogging {
 //    log.info("User " + userId + " is viewing TimeLine")
     val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
     val future: Future[HttpResponse] = pipeline(Get(s"http://127.0.0.1:8080/user/timeline/$userId"))
-    val timelineResult = Await.result(future, 5 second)
+//    val timelineResult = Await.result(future, 5 second)
 
 //    println(timelineResult.entity.data.asString.parseJson.prettyPrint)
   }
@@ -236,7 +236,7 @@ class PassiveUsersSubActor extends Actor with ActorLogging {
 
     case "ViewTimelineForPassiveiveUsers" =>
       ViewTimelineFromPassiveUser(passiveUsersList)
-      Thread.sleep(100)
+//      Thread.sleep(100)
       self ! "ViewTimelineForPassiveiveUsers"
 
     case "PleaseKillYourself" =>
@@ -309,7 +309,7 @@ class PassiveUsersSubActor extends Actor with ActorLogging {
     //    log.info("User " + userId + " is viewing TimeLine")
     val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
     val future: Future[HttpResponse] = pipeline(Get(s"http://127.0.0.1:8080/user/timeline/$userId"))
-    Await.result(future, 5 second)
+//    Await.result(future, 5 second)
 
   }
 
@@ -335,12 +335,12 @@ class PagesActivitiessSubActor extends Actor with ActorLogging {
 
     case "StartPostsForPages"  =>
       makeAPostFromPage(registeredPages)
-      Thread.sleep(10)
+//      Thread.sleep(10)
       self ! "StartPhotoPostsForPages"
 
     case "StartPhotoPostsForPages" =>
      PostAPhotoFromPage(registeredPages,registeredUsers)
-      Thread.sleep(10)
+//      Thread.sleep(10)
       self ! "StartPostsForPages"
 
     case "PleaseKillYourself" =>
@@ -377,7 +377,7 @@ class PagesActivitiessSubActor extends Actor with ActorLogging {
     val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
 
     val future: Future[HttpResponse] = pipeline(Post("http://127.0.0.1:8080/page/photo", entity))
-    Await.result(future, 5 second)
+//    Await.result(future, 5 second)
   }
 
   def makeAPostFromPage(registeredPages: List[(String, String)]) = {
