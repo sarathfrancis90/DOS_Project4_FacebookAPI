@@ -232,8 +232,8 @@ class ActiveUsersSubActor extends Actor with ActorLogging {
     val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
 
     val future: Future[HttpResponse] = pipeline(Post("http://127.0.0.1:8080/user/post", entity))
-    val userPostFutureResult = Await.result(future, 5 second)
-    println(userPostFutureResult.entity.data.asString.parseJson.prettyPrint)
+//    val userPostFutureResult = Await.result(future, 5 second)
+//    println(userPostFutureResult.entity.data.asString.parseJson.prettyPrint)
 
   }
   def PostAphotoFromActiveUser(activeUsers: List[(String, String)],registeredUsers: List[(String, String)])  {
@@ -264,8 +264,8 @@ class ActiveUsersSubActor extends Actor with ActorLogging {
     val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
 
     val future: Future[HttpResponse] = pipeline(Post("http://127.0.0.1:8080/user/photo", entity))
-    val photoFutureResult = Await.result(future, 5 second)
-    println(photoFutureResult.entity.data.asString.parseJson.prettyPrint)
+//    val photoFutureResult = Await.result(future, 5 second)
+//    println(photoFutureResult.entity.data.asString.parseJson.prettyPrint)
 
   }
   def ViewTimelineFromActiveUser(activeUsers: List[(String, String)]) {
