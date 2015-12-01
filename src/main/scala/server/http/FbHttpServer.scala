@@ -327,7 +327,7 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
           })
           requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, friends.toList.take(10).toJson.toString))
       }
-    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/page/pending_in_friend_requests" =>
+    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/pending_in_friend_requests" =>
       val requestor = sender
       val userId = path.split('/').last
       val getPendingInFriendsReq = GetPendingInFriendsReq(
@@ -342,7 +342,7 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
           })
           requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, pendingInFriendRequests.toList.take(10).toJson.toString))
       }
-    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/page/pending_out_friend_requests" =>
+    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/pending_out_friend_requests" =>
       val requestor = sender
       val userId = path.split('/').last
       val getPendingOutFriendsReq = GetPendingOutFriendsReq(

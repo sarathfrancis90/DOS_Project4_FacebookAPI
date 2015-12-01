@@ -34,6 +34,8 @@ case class ActiveUserStartActivities(actveUsers: List[(String, String)],register
 
 case class PassiveUserStartActivities(passiveUsers: List[(String, String)],registeredUsers: List[(String, String)])
 
+case class StartAllActivities(registeredUsers: List[(String, String)],registeredPages: List[(String, String)],percent : Int, average : Int)
+
 
 class Master extends Actor with ActorLogging {
   val totalUsersCount = 100000
@@ -55,6 +57,7 @@ class Master extends Actor with ActorLogging {
   var pagesActivitiesActorRef: ActorRef = _
   var activeUsersActorRef: ActorRef = _
   var passiveUsersActorRef: ActorRef = _
+  var allActivitiesActorRef: ActorRef = _
 
   def receive = {
     case "Init" =>
@@ -85,8 +88,8 @@ class Master extends Actor with ActorLogging {
 
     case DoneUserLikingPage =>
       totalNumberOfLikesDone += 1
-      if (totalNumberOfLikesDone == 1000 ) {
-        log.info("Done liking 1000 pages")
+      if (totalNumberOfLikesDone == 1000) {
+        log.info("Done liking 100 pages")
         pagesActivitiesActorRef = context.system.actorOf(Props(new PagesActivitiessSubActor), "PagesActivities")
         pagesActivitiesActorRef ! StartPageActivities(myRegisteredPages.toList,myRegisteredUsers.toList)
         val (activeUsers,passiveUsers) = myRegisteredUsers.splitAt(((percentageofActiveUsers/100) * myRegisteredUsers.length).toInt)
@@ -94,6 +97,8 @@ class Master extends Actor with ActorLogging {
         passiveUsersActorRef = context.system.actorOf(Props(new PassiveUsersSubActor), "PassiveUsers")
         activeUsersActorRef ! ActiveUserStartActivities(activeUsers.toList,myRegisteredUsers.toList)
         passiveUsersActorRef ! PassiveUserStartActivities(passiveUsers.toList,myRegisteredUsers.toList)
+//        allActivitiesActorRef = context.system.actorOf(Props(new AllActivitiesUserSubActor), "AllActivities")
+//        allActivitiesActorRef ! StartAllActivities(myRegisteredUsers.toList, myRegisteredPages.toList,percentageOfUsersWhoClickLike,averageNumberOfPagesLikedByAUser)
       }
       if(totalNumberOfLikesDone == totalNumberOfLikesToDo) {
         log.info("Done liking all the " + totalNumberOfLikesDone + " pages ")
@@ -101,6 +106,61 @@ class Master extends Actor with ActorLogging {
       }
 
   }
+}
+
+class AllActivitiesUserSubActor extends Actor with ActorLogging {
+  import FbJsonProtocol._
+  implicit val system = ActorSystem()
+  import system.dispatcher
+
+  var registeredPages: List[(String, String)] = _
+  var registeredUsers: List[(String, String)] = _
+  var mySender: ActorRef = _
+  var percentageOfUsersWhoClickLike : Int = _
+  var averageNumberOfPagesLikedByAUser : Int = _
+  var currentUserIndex : Int = _
+  var currentPageIndex  : Int = _
+
+
+  def receive = {
+
+    case StartAllActivities(registeredUsersIn, registeredPagesIn, percent, average) =>
+      log.info("Pages starting to create posts and share photos")
+      mySender = sender
+      registeredPages = registeredPagesIn
+      registeredUsers = registeredUsersIn
+      percentageOfUsersWhoClickLike = percent
+      averageNumberOfPagesLikedByAUser = average
+      currentUserIndex = 0
+      currentPageIndex = 0
+
+      self ! "StartLikingPages"
+
+    case "StartLikingPages" =>
+      if(currentUserIndex == registeredUsers.length-1) currentUserIndex = 0 else currentUserIndex = currentUserIndex + 1
+      if(currentPageIndex == registeredPages.length-1) currentPageIndex = 0 else currentPageIndex = currentPageIndex + 1
+      UserLikingPages(registeredUsers, registeredPages, percentageOfUsersWhoClickLike, averageNumberOfPagesLikedByAUser,currentUserIndex, currentPageIndex)
+      log.info(s"User at $currentUserIndex liking page at $currentPageIndex")
+      self ! "Start Unliking pages"
+
+
+      def UserLikingPages(registeredUsers: List[(String, String)], registeredPages : List[(String, String)], percent : Int, average : Int, currentUserIndex: Int, currentPageIndex : Int)  {
+
+          val addUserLikedPageReq = AddUserLikedPageReq(
+            userId = registeredUsers(currentUserIndex)._2,
+            pageName = registeredPages(currentPageIndex)._1)
+
+          val entity = HttpEntity(contentType = ContentType(MediaTypes.`application/json`, HttpCharsets.`UTF-8`), addUserLikedPageReq.toJson.toString)
+
+          val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
+
+          val future: Future[HttpResponse] = pipeline(Post("http://127.0.0.1:8080/like_this_page", entity))
+      }
+
+
+
+  }
+
 }
 
 class ActiveUsersSubActor extends Actor with ActorLogging {
@@ -136,7 +196,7 @@ class ActiveUsersSubActor extends Actor with ActorLogging {
     case "ViewTimelineForActiveUsers" =>
       ViewTimelineFromActiveUser(activeUsersList)
 //      Thread.sleep(10)
-      self ! "StartCreatingAlbumForActiveUsers"
+      self ! "StartPostsForActiveUsers"
 
 
     case "CreateAlbumsFromActiveUsers"  =>
@@ -172,7 +232,8 @@ class ActiveUsersSubActor extends Actor with ActorLogging {
     val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
 
     val future: Future[HttpResponse] = pipeline(Post("http://127.0.0.1:8080/user/post", entity))
-//    Await.result(future, 5 second)
+    val userPostFutureResult = Await.result(future, 5 second)
+    println(userPostFutureResult.entity.data.asString.parseJson.prettyPrint)
 
   }
   def PostAphotoFromActiveUser(activeUsers: List[(String, String)],registeredUsers: List[(String, String)])  {
@@ -203,7 +264,8 @@ class ActiveUsersSubActor extends Actor with ActorLogging {
     val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
 
     val future: Future[HttpResponse] = pipeline(Post("http://127.0.0.1:8080/user/photo", entity))
-//    Await.result(future, 5 second)
+    val photoFutureResult = Await.result(future, 5 second)
+    println(photoFutureResult.entity.data.asString.parseJson.prettyPrint)
 
   }
   def ViewTimelineFromActiveUser(activeUsers: List[(String, String)]) {
