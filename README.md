@@ -19,32 +19,31 @@ The **FbHttpServer** console window displays the number of requests of each kind
 
 # REST/HTTP Server
 
-The REST API is implemented using the spray – can library. The HTTP Server handles all the all the HTTP Requests from client. The list of 'end points' handled by the HTTP Server is given below
+The REST API is implemented using the spray–can library. The list of end points handled by the HTTP Server is given below
 
 
 
 | **HTTP Method** | **End Points** | **Function** |
 | --- | --- | --- |
-| _GET_ | /ping | Testing whether server is up and running |
+| _GET_ | /ping | To test if server is running |
 | _POST_ | /user/create | Creates a new user and returns the userID |
 | _POST_ | page/create | Creates a new page and returns the pageID |
-| _POST_ | /like\_this\_page | User like a page |
-| _POST_ | /page/post | Page posting a message |
-| _POST_ | /page/photo | Page posting a photo. Have  the option for tagging multiple users |
-| _POST_ | /user/post | User post a message |
-| _POST_ | /user/photo | User post a photo. has the option for tagging multiple users |
+| _POST_ | /like\_this\_page | For a user to like a page |
+| _POST_ | /page/post | Creates a post by a page |
+| _POST_ | /page/photo | Creates a photo posted by a page |
+| _POST_ | /user/post | Creates a post by a user; users can tag other users in posts |
+| _POST_ | /user/photo | Creates a photo by a user; users can tag other users in caption |
 | _POST_ | /user/album | Creates a new album for the requesting user |
-| _POST_ | /user/unlike\_page | User unlike a page |
-| _GET_ | /user/timeline | User views his/her timeline |
-| _GET_ | /user/ownp\_hotos | Returns all the photos posted by the requesting user |
-| _GET_ | /user/tagged\_photos | Returns all the photos in which the requesting user is tagged |
-| _GET_ | /user/own\_posts | Returns all the posts posted by the requesting user |
-| _GET_ | /user/tagged\_posts | Returns all the posts in which the requesting user is tagged |
-| _GET_ | /user/get\_albums | User views all  the albums created by him |
-| _GET_ | /user/album\_photos | User viewing all the photos of a particular album |
-| _GET_ | /user/liked\_pages | User viewing  list of pages that  he /she had liked |
-| _GET_ | /page/liked\_users | Page viewing the list of users who have liked the page |
-
+| _POST_ | /user/unlike\_page | For a user to un-like a page |
+| _GET_ | /user/timeline | View timeline for users |
+| _GET_ | /user/ownp\_hotos | View photos posted by user |
+| _GET_ | /user/tagged\_photos | View photos the user is tagged in |
+| _GET_ | /user/own\_posts | View posts made by user |
+| _GET_ | /user/tagged\_posts | View posts the user is tagged in |
+| _GET_ | /user/get\_albums | View albums the user owns  |
+| _GET_ | /user/album\_photos | View photos in an album owned by user |
+| _GET_ | /user/liked\_pages | View pages liked by user |
+| _GET_ | /page/liked\_users | View users that have liked a page |
 
 
 # HTTP Client
