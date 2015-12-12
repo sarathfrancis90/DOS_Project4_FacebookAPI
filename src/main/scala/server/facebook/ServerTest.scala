@@ -17,28 +17,28 @@ object ServerTest {
     val system = ActorSystem("ServerTest")
     val server00 = system.actorOf(Props(new FbServer), "FbServer00")
 
-    val user00 = new UserNode("", "About user00", "1/1/1900", "user00@gmail.com", "User00")
-    val user01 = new UserNode("", "About user01", "1/1/1900", "user01@gmail.com", "User01")
+    val user00 = new UserNode("", "About user00", "1/1/1900", "user00@gmail.com", "User00", "pub00")
+    val user01 = new UserNode("", "About user01", "1/1/1900", "user01@gmail.com", "User01", "pub01")
 
-    var future: Future[CreateFbNodeRsp] = (server00 ? CreateFbNodeReq("user", user00)).mapTo[CreateFbNodeRsp]
-    var createFbNodeRsp = Await.result(future, someTimeout.duration)
-    if (createFbNodeRsp.result) {
+    var future: Future[CreateUserRsp] = (server00 ? CreateUserReq(user00)).mapTo[CreateUserRsp]
+    var createUserRsp = Await.result(future, someTimeout.duration)
+    if (createUserRsp.result) {
       println("user00 added")
-      user00.id = createFbNodeRsp.id
+      user00.id = createUserRsp.id
     }
 
-    future = (server00 ? CreateFbNodeReq("user", user01)).mapTo[CreateFbNodeRsp]
-    createFbNodeRsp = Await.result(future, someTimeout.duration)
-    if (createFbNodeRsp.result) {
+    future = (server00 ? CreateUserReq(user01)).mapTo[CreateUserRsp]
+    createUserRsp = Await.result(future, someTimeout.duration)
+    if (createUserRsp.result) {
       println("user01 added")
-      user01.id = createFbNodeRsp.id
+      user01.id = createUserRsp.id
     }
-
+/*
     val now = Calendar.getInstance().getTime.toString
 
-    val post00 = new PostNode("", now, "post00 desc", "", "I'm tagging @User01@User02 in post00", List.empty, now)
-    val post01 = new PostNode("", now, "post01 desc", "", "I'm tagging nobody in post01", List.empty, now)
-    val post02 = new PostNode("", now, "post02 desc", "", "I'm tagging @User02@User01 in post02", List.empty, now)
+    val post00 = new PostNode("", now, "post00 desc", "", "I'm tagging @User01@User02 in post00", "", List.empty, List.empty, now)
+    val post01 = new PostNode("", now, "post01 desc", "", "I'm tagging nobody in post01", "", List.empty, List.empty, now)
+    val post02 = new PostNode("", now, "post02 desc", "", "I'm tagging @User02@User01 in post02", "", List.empty, List.empty, now)
 
     val futurePostRsp: Future[CreateUserPostRsp] = (server00 ? CreateUserPostReq(user00.id, post00)).mapTo[CreateUserPostRsp]
     val createUserPostRsp = Await.result(futurePostRsp, someTimeout.duration)
@@ -258,7 +258,7 @@ object ServerTest {
     println(pages(0).name+" posting posts")
     val pagePosts = new ListBuffer[PostNode]()
     for (i <- 0 until 8) {
-      val pagePost = new PostNode("", now, "page post "+i.toString+" description", "", "some message in page post "+i.toString, List.empty, now)
+      val pagePost = new PostNode("", now, "page post "+i.toString+" description", "", "some message in page post "+i.toString, "", List.empty, List.empty, now)
       val futurePagePostRsp: Future[CreatePagePostRsp] = (server00 ? CreatePagePostReq(pages(0).id, pagePost)).mapTo[CreatePagePostRsp]
       val createPagePostRsp = Await.result(futurePagePostRsp, someTimeout.duration)
       println(createPagePostRsp.postId)
@@ -410,6 +410,6 @@ object ServerTest {
       val rsp = Await.result(fut, someTimeout.duration)
       rsp.friends.foreach(println(_))
     }
-
+*/
   }
 }

@@ -98,13 +98,13 @@ case class CreateUserPhotoReq(userId: String, photo: PhotoNode)
 
 case class CreateUserPhotoRsp(photoId: String)
 
-case class GetUserFriendsReq(userId: String, startFrom: String, limit: Int) /* TODO: not handled yet */
+case class GetUserFriendsReq(userId: String, startFrom: String, limit: Int)
 
-case class GetUserFriendsRsp(users: List[UserNode]) /* TODO: not handled yet */
+case class GetUserFriendsRsp(users: List[UserNode])
 
-case class IsUserFriendsWithReq(userId: String, anotherUserId: String) /* TODO: not handled yet */
+case class IsUserFriendsWithReq(userId: String, anotherUserId: String)
 
-case class IsUserFriendsWithRsp(user: UserNode) /* TODO: not handled yet */
+case class IsUserFriendsWithRsp(user: UserNode)
 
 case class GetUserFeedReq(userId: String, typeOfPosts: String, startFrom: String, limit: Int)
 
@@ -179,3 +179,11 @@ case class GetFriendsReqToFbWorker(ownFriends: ListBuffer[String])
 case class GetFriendsRspToFbServer(friends: List[UserNode])
 
 case class GetFriendsRsp(friends: List[UserNode])
+
+case class CreateUserReq(user: UserNode)
+
+case class CreateUserReqToFbWorker(user: UserNode)
+
+case class CreateUserRspToFbServer(result: Boolean, id: String)
+
+case class CreateUserRsp(result: Boolean, id: String)

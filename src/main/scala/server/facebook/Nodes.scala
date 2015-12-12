@@ -6,7 +6,8 @@ case class UserNode(var id: String,
                     var about: String,
                     var birthday: String,
                     var email: String,
-                    var first_name: String) extends Node
+                    var first_name: String,
+                    var public_key: String) extends Node
 
 case class PageNode(var id: String,
                     var about: String,
@@ -15,21 +16,23 @@ case class PageNode(var id: String,
                     var likes: Int) extends Node
 
 case class PostNode(var id: String,
-                    var created_time: String, /*FIXME: a good time*/
+                    var created_time: String,
                     var description: String,
-                    var from: String, /*FIXME: can be User or Page*/
+                    var from: String,
                     var message: String,
+                    var encrypted_message: String,
+                    var encrypted_private_keys: List[(String, String)],
                     var to: List[String],
-                    var updated_time: String /*FIXME: a good time*/) extends Node
+                    var updated_time: String) extends Node
 
 case class FriendListNode(var id: String,
                           var name: String,
                           var owner: String) extends Node
 
 case class PhotoNode(var id: String,
-                     var album: String, /*FIXME: an Album node*/
-                     var created_time: String, /*FIXME: */
-                     var from: String, /*FIXME: can be a User profile or Page profile*/
+                     var album: String,
+                     var created_time: String,
+                     var from: String,
                      var height: Int,
                      var name: String,
                      var width: Int,
@@ -38,10 +41,13 @@ case class PhotoNode(var id: String,
 case class AlbumNode(var id: String,
                      var count: Int,
                      var cover_photo: String,
-                     var created_time: String, /*FIXME: */
+                     var created_time: String,
                      var description: String,
-                     var from: String, /*FIXME: */
+                     var from: String,
                      var name: String,
                      var album_type: String,
-                     var updated_time: String /*FIXME: */) extends Node
+                     var updated_time: String) extends Node
+
+case class PublicKeyNode(var id: String,
+                         var public_Key: String) extends Node
 

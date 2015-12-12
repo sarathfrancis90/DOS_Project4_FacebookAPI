@@ -37,6 +37,8 @@ class FbServer extends Actor with ActorLogging {
   var photosTags: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
   var photosLikes: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
 
+  var publicKeys: mutable.HashMap[String, Node] = new mutable.HashMap[String, Node]()
+
   var forwardingMap: ListBuffer[(ActorRef, ActorRef)] = new ListBuffer[(ActorRef, ActorRef)]()
   var mySubActorCount: Int = 0
 
@@ -80,6 +82,13 @@ class FbServer extends Actor with ActorLogging {
           if (albumNode.id.isEmpty)
             albumNode.id = getShaOf(albumNode.from + albumNode.name)
           sender ! addToDb(albums, albumNode.id, albumNode)
+
+        case "publickey" =>
+          val publicKeyNode = node.asInstanceOf[PublicKeyNode]
+          if (publicKeyNode.id.isEmpty)
+            publicKeyNode.id = getShaOf(publicKeyNode.public_Key)
+          sender ! addToDb(publicKeys, publicKeyNode.id, publicKeyNode)
+
       }
 
     case GetFbNodeReq(nodeType, nodeId) =>
@@ -338,6 +347,12 @@ class FbServer extends Actor with ActorLogging {
 
     case GetFriendsRspToFbServer(friends) =>
       getRequestor(sender) ! GetFriendsRsp(friends)
+
+    case CreateUserReq(user) =>
+      createFbWorkerForUserActivities(sender) ! CreateUserReqToFbWorker(user)
+
+    case CreateUserRspToFbServer(result, id) =>
+      getRequestor(sender) ! CreateUserRsp(result, id)
   }
 
   def addToDb(db: mutable.HashMap[String, Node], key: String, value: Node): CreateFbNodeRsp = {
@@ -361,10 +376,14 @@ class FbServer extends Actor with ActorLogging {
       }
       else if (db == albums) {
         albumsPhotos.put(key, ListBuffer.empty)
-      } else if (db == pages) {
+      }
+      else if (db == pages) {
         pagesLikedUsers.put(key, ListBuffer.empty)
         pagesOwnPosts.put(key, ListBuffer.empty)
         pagesOwnPhotos.put(key, ListBuffer.empty)
+      }
+      else if (db == publicKeys) {
+        // nothing for now, hopefully nothing forever
       }
     }
     CreateFbNodeRsp(result, id)
