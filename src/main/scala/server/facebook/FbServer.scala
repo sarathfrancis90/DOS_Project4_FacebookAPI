@@ -353,6 +353,13 @@ class FbServer extends Actor with ActorLogging {
 
     case CreateUserRspToFbServer(result, id) =>
       getRequestor(sender) ! CreateUserRsp(result, id)
+
+    case GetFriendDetailsReq(userId, friendName) =>
+      val getFriendDetailsReqToFbWorker = GetFriendDetailsReqToFbWorker(usersFriends.get(userId).get, friendName)
+      createFbWorkerForUserActivities(sender) ! getFriendDetailsReqToFbWorker
+
+    case GetFriendDetailsRspToFbServer(friendNode) =>
+      getRequestor(sender) ! GetFriendDetailsRsp(friendNode)
   }
 
   def addToDb(db: mutable.HashMap[String, Node], key: String, value: Node): CreateFbNodeRsp = {

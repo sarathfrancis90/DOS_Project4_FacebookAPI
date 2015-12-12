@@ -284,6 +284,17 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
       else
         myFbServerRef ! CreateUserRspToFbServer(false, "")
 
+    case GetFriendDetailsReqToFbWorker(ownFriends, friendName) =>
+      val friendId = getShaOf(friendName)
+      var friendNode = None: Option[UserNode]
+
+      if (ownFriends.contains(friendId)) {
+        val future: Future[GetFbNodeRsp] = (myFbServerRef ? GetFbNodeReq("user", friendId)).mapTo[GetFbNodeRsp]
+        val getFbNodeRsp = Await.result(future, someTimeout.duration)
+        friendNode = Some(getFbNodeRsp.node.asInstanceOf[UserNode])
+      }
+      myFbServerRef ! GetFriendDetailsRspToFbServer(friendNode)
+
     case PleaseKillYourself =>
       context.stop(self)
   }

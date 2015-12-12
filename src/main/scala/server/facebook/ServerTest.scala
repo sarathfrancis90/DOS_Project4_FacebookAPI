@@ -33,6 +33,66 @@ object ServerTest {
       println("user01 added")
       user01.id = createUserRsp.id
     }
+
+    {
+      println("")
+      println("")
+      println("testing friend requests")
+      println("user00 adding user01 as friend")
+      val fut: Future[AddFriendRsp] = (server00 ? AddFriendReq(user00.id, user01.first_name)).mapTo[AddFriendRsp]
+      val rsp = Await.result(fut, someTimeout.duration)
+      println(rsp.result)
+    }
+
+    {
+      println("")
+      println("user01 checking incoming requests")
+      val fut: Future[GetPendingInFriendsRsp] = (server00 ? GetPendingInFriendsReq(user01.id)).mapTo[GetPendingInFriendsRsp]
+      val rsp = Await.result(fut, someTimeout.duration)
+      rsp.inFriendNames.foreach(println(_))
+    }
+
+    {
+      println("")
+      println("user01 adding user00 as friend")
+      val fut: Future[AddFriendRsp] = (server00 ? AddFriendReq(user01.id, user00.first_name)).mapTo[AddFriendRsp]
+      val rsp = Await.result(fut, someTimeout.duration)
+      println(rsp.result)
+    }
+
+    {
+      println("")
+      println("user00 checking incoming requests")
+      val fut: Future[GetPendingInFriendsRsp] = (server00 ? GetPendingInFriendsReq(user00.id)).mapTo[GetPendingInFriendsRsp]
+      val rsp = Await.result(fut, someTimeout.duration)
+      rsp.inFriendNames.foreach(println(_))
+    }
+
+    {
+      println("")
+      println("user01 checking incoming requests")
+      val fut: Future[GetPendingInFriendsRsp] = (server00 ? GetPendingInFriendsReq(user01.id)).mapTo[GetPendingInFriendsRsp]
+      val rsp = Await.result(fut, someTimeout.duration)
+      rsp.inFriendNames.foreach(println(_))
+    }
+
+    {
+      println("")
+      println("user00's friends")
+      val fut: Future[GetFriendsRsp] = (server00 ? GetFriendsReq(user00.id)).mapTo[GetFriendsRsp]
+      val rsp = Await.result(fut, someTimeout.duration)
+      rsp.friends.foreach(println(_))
+    }
+
+    {
+      println("")
+      println("user01's friends")
+      val fut: Future[GetFriendsRsp] = (server00 ? GetFriendsReq(user01.id)).mapTo[GetFriendsRsp]
+      val rsp = Await.result(fut, someTimeout.duration)
+      rsp.friends.foreach(println(_))
+    }
+
+    
 /*
     val now = Calendar.getInstance().getTime.toString
 

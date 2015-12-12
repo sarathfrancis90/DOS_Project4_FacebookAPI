@@ -20,8 +20,8 @@ case class PostNode(var id: String,
                     var description: String,
                     var from: String,
                     var message: String,
-                    var encrypted_message: String,
-                    var encrypted_private_keys: List[(String, String)],
+//                    var encrypted_message: String,
+//                    var encrypted_private_keys: List[(String, String)],
                     var to: List[String],
                     var updated_time: String) extends Node
 
