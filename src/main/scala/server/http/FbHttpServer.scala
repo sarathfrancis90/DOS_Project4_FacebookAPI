@@ -17,7 +17,7 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 
 object FbJsonProtocol extends DefaultJsonProtocol {
-  implicit val userNodeFormat = jsonFormat5(UserNode)
+  implicit val userNodeFormat = jsonFormat6(UserNode)
   implicit val pageNodeFormat = jsonFormat5(PageNode)
   implicit val postNodeFormat = jsonFormat7(PostNode)
   implicit val friendListNodeFormat = jsonFormat3(FriendListNode)
@@ -44,6 +44,7 @@ object FbJsonProtocol extends DefaultJsonProtocol {
     def write(n: Node) = n match {
       case post: PostNode => post.toJson
       case photo: PhotoNode => photo.toJson
+      case postV2: PostNodeV2 => postV2.toJson
     }
 
     def read(value: JsValue) = value match {
@@ -51,8 +52,8 @@ object FbJsonProtocol extends DefaultJsonProtocol {
         throw new DeserializationException("Not supported")
     }
   }
-
-
+  implicit val encryptedPrivateKeyFormat = jsonFormat2(EncryptedPrivateKey)
+  implicit val postNodeV2Format = jsonFormat9(PostNodeV2)
 }
 
 class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with SprayJsonSupport {

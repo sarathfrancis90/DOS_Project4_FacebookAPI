@@ -20,10 +20,19 @@ case class PostNode(var id: String,
                     var description: String,
                     var from: String,
                     var message: String,
-//                    var encrypted_message: String,
-//                    var encrypted_private_keys: List[(String, String)],
                     var to: List[String],
                     var updated_time: String) extends Node
+
+case class PostNodeV2(var id: String,
+                      var created_time: String,
+                      var description: String,
+                      var from: String,
+                      var message: String,
+                      var encrypted_message: String,
+                      var encrypted_private_keys: List[EncryptedPrivateKey],
+                      var to: List[String],
+                      var updated_time: String) extends Node
+
 
 case class FriendListNode(var id: String,
                           var name: String,
@@ -50,4 +59,7 @@ case class AlbumNode(var id: String,
 
 case class PublicKeyNode(var id: String,
                          var public_Key: String) extends Node
+
+case class EncryptedPrivateKey(var to: String,
+                               var encrypted_private_key: String)
 
