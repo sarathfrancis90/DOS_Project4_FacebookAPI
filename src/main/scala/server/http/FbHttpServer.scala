@@ -41,6 +41,7 @@ object FbJsonProtocol extends DefaultJsonProtocol {
   implicit val addFriendReqFormat = jsonFormat2(AddFriendReq)
   implicit val addFriendRspFormat = jsonFormat1(AddFriendRsp)
   implicit val getPendingInFriendsRsp = jsonFormat1(GetPendingInFriendsRsp)
+  implicit val createUserRspFormat = jsonFormat2(CreateUserRsp)
 
   implicit object NodeFormat extends RootJsonFormat[Node] {
     def write(n: Node) = n match {
@@ -79,9 +80,9 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
     case HttpRequest(POST, Uri.Path("/user/create"), _, entity, _) =>
       val requestor = sender
       val userNode = entity.asString.parseJson.convertTo[UserNode]
-      val future: Future[CreateFbNodeRsp] = (fbServer ? CreateFbNodeReq("user", userNode)).mapTo[CreateFbNodeRsp]
+      val future: Future[CreateUserRsp] = (fbServer ? CreateUserReq(userNode)).mapTo[CreateUserRsp]
       future.onSuccess {
-        case result: CreateFbNodeRsp =>
+        case result: CreateUserRsp =>
           requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, result.toJson.toString))
       }
 
@@ -339,7 +340,7 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
           result.friends.foreach(friend => {
             friends += friend
           })
-          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, friends.toList.take(10).toJson.toString))
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, friends.toList.toJson.toString))
       }
 
     case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/pending_in_friend_requests" =>
