@@ -49,15 +49,23 @@ object FbJsonProtocol extends DefaultJsonProtocol {
       case photo: PhotoNode => photo.toJson
       case postV2: PostNodeV2 => postV2.toJson
       case user: UserNode => user.toJson
-
-
+      case _ =>
+        throw new SerializationException("Not supported")
     }
 
-    def read(value: JsValue) = value match {
-      case _ =>
-        throw new DeserializationException("Not supported")
+    def read(value: JsValue) = {
+      val discriminator = List(
+        "first_name"
+      ).map(d => value.asJsObject.fields.contains(d))
+      discriminator.indexOf(true) match {
+        case 0 =>
+          value.convertTo[UserNode]
+        case _ =>
+          deserializationError("Not supported")
+      }
     }
   }
+
   implicit val encryptedPrivateKeyFormat = jsonFormat2(EncryptedPrivateKey)
   implicit val postNodeV2Format = jsonFormat9(PostNodeV2)
 }

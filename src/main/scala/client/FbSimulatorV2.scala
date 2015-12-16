@@ -195,11 +195,12 @@ class FbUser extends Actor with ActorLogging {
 
       val future: Future[HttpResponse] = pipeline(Get(s"http://127.0.0.1:8080/user/get_friends/$myUserId"))
       val response = Await.result(future, 5 second)
-//      val FriendsList = response.entity.asString.parseJson.convertTo[List[Node]]
+      val friends = response.entity.asString.parseJson.convertTo[List[UserNode]]
+      println("***Friends for the user: " + myUserName)
+      friends.foreach(friend => {
+        println (friend.first_name)
+      })
 
-      println("Friends for the User :" + myUserName)
-      println (response.entity.asString.parseJson.prettyPrint)
-//      FriendsList.foreach(println(_))
       Thread.sleep(1000)
   }
 }
