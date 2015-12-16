@@ -19,26 +19,11 @@ import java.util.Base64
 import javax.crypto.spec.SecretKeySpec
 import javax.crypto.{Cipher, KeyGenerator, SecretKey}
 
-case object UserInit
-
 case class SignUpUser(someUniqueId: Int)
-
-case object RegisterPage
-
-case object FbUserInit
-
-case object FbPageInit
 
 case class RegisteredUsersList(registeredUsersList: List[(String, String, ActorRef)])
 
 case class DoneCreatingUser(userName: String, userId: String)
-
-case object AddFriends
-
-case object GetPendingInFriendRequests
-
-case object GetFriendsList
-
 
 class Master extends Actor with ActorLogging {
 
@@ -82,10 +67,10 @@ class Master extends Actor with ActorLogging {
     case "CreatePages" =>
       for (i <- 1 until totalPagesCount) {
         fbPages += ActorSystem("dos-project-4").actorOf(Props(new FbPage), name = i.toString)
-        fbPages(i) ! RegisterPage
+        fbPages(i) ! "RegisterPage"
       }
       for (fbPage <- fbPages) {
-        fbPage ! RegisterPage
+        fbPage ! "RegisterPage"
       }
   }
 }
@@ -144,9 +129,9 @@ class FbUser extends Actor with ActorLogging {
 
     case RegisteredUsersList(registeredUserList) =>
       registeredUsersList = registeredUserList
-      self ! AddFriends
+      self ! "AddFriends"
 
-    case AddFriends =>
+    case "AddFriends" =>
       for (i <- myUserName + 5 until registeredUsersList.length by 5) {
 
         val addFriendReq = AddFriendReq(
@@ -168,9 +153,9 @@ class FbUser extends Actor with ActorLogging {
         }
 
       }
-      self ! GetPendingInFriendRequests
+      self ! "GetPendingInFriendRequests"
 
-    case GetPendingInFriendRequests =>
+    case "GetPendingInFriendRequests" =>
 
       val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
 
@@ -201,19 +186,20 @@ class FbUser extends Actor with ActorLogging {
       })
 
       val totalTimeDuration = Duration(2000, "millis")
-      context.system.scheduler.scheduleOnce(totalTimeDuration, self, GetPendingInFriendRequests)
+      context.system.scheduler.scheduleOnce(totalTimeDuration, self, "GetPendingInFriendRequests")
 
-//      context.system.scheduler.scheduleOnce(totalTimeDuration, self, GetFriendsList)
+      context.system.scheduler.scheduleOnce(totalTimeDuration, self, "GetFriendsList")
 
-    case GetFriendsList =>
+    case "GetFriendsList" =>
       val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
 
       val future: Future[HttpResponse] = pipeline(Get(s"http://127.0.0.1:8080/user/get_friends/$myUserId"))
       val response = Await.result(future, 5 second)
-      val FriendsList = response.entity.asString.parseJson.convertTo[List[String]]
+//      val FriendsList = response.entity.asString.parseJson.convertTo[List[Node]]
 
       println("Friends for the User :" + myUserName)
-      FriendsList.foreach(println(_))
+      println (response.entity.asString.parseJson.prettyPrint)
+//      FriendsList.foreach(println(_))
       Thread.sleep(1000)
   }
 }
@@ -221,7 +207,7 @@ class FbUser extends Actor with ActorLogging {
 class FbPage extends Actor with ActorLogging {
 
   def receive = {
-    case RegisterPage =>
+    case "RegisterPage" =>
   }
 
 }

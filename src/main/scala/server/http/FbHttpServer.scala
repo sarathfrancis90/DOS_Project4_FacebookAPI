@@ -48,6 +48,9 @@ object FbJsonProtocol extends DefaultJsonProtocol {
       case post: PostNode => post.toJson
       case photo: PhotoNode => photo.toJson
       case postV2: PostNodeV2 => postV2.toJson
+      case user: UserNode => user.toJson
+
+
     }
 
     def read(value: JsValue) = value match {
