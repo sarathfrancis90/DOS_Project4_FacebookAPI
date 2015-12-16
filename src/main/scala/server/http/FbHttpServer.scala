@@ -40,6 +40,9 @@ object FbJsonProtocol extends DefaultJsonProtocol {
   implicit val removeUserLikedPageRspFormat = jsonFormat1(RemoveUserLikedPageRsp)
   implicit val addFriendReqFormat = jsonFormat2(AddFriendReq)
   implicit val addFriendRspFormat = jsonFormat1(AddFriendRsp)
+  implicit val getPendingInFriendsRsp = jsonFormat1(GetPendingInFriendsRsp)
+
+
   implicit object NodeFormat extends RootJsonFormat[Node] {
     def write(n: Node) = n match {
       case post: PostNode => post.toJson
@@ -353,7 +356,7 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
           result.inFriendNames.foreach(inFriendName => {
             pendingInFriendRequests += inFriendName
           })
-          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, pendingInFriendRequests.toList.take(10).toJson.toString))
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, pendingInFriendRequests.toList.toJson.toString))
       }
 
     case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/pending_out_friend_requests" =>
