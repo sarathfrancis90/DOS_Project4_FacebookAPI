@@ -29,7 +29,7 @@ case object FbUserInit
 
 case object FbPageInit
 
-case class RegisteredUsersList (registeredUsersList : List[(String, String, ActorRef)] )
+case class RegisteredUsersList(registeredUsersList: List[(String, String, ActorRef)])
 
 case class DoneCreatingUser(userName: String, userId: String)
 
@@ -57,7 +57,7 @@ class Master extends Actor with ActorLogging {
 
     case "MasterInit" =>
       self ! "CreateUsers"
-//      self ! "CreatePages"
+    //      self ! "CreatePages"
 
     case "CreateUsers" =>
       for (i <- 0 until totalUsersCount) {
@@ -67,12 +67,12 @@ class Master extends Actor with ActorLogging {
         fbUsers(i) ! SignUpUser(i)
       }
     case DoneCreatingUser(userName, userId) =>
-      val registeredUser = (userName, userId,sender)
+      val registeredUser = (userName, userId, sender)
       myRegisteredUsers += registeredUser
       if (myRegisteredUsers.length == totalUsersCount) {
         log.info("Done creating " + myRegisteredUsers.length.toString + " users")
         for (i <- 1 until fbUsers.length) {
-          fbUsers(i) ! RegisteredUsersList (myRegisteredUsers.toList)
+          fbUsers(i) ! RegisteredUsersList(myRegisteredUsers.toList)
         }
       }
 
@@ -149,26 +149,39 @@ class FbUser extends Actor with ActorLogging {
           case Failure(error) =>
             println("Some error has occurred: " + error.getMessage)
         }
-        self ! GetPendingInFriendRequests
+
       }
+      self ! GetPendingInFriendRequests
 
     case GetPendingInFriendRequests =>
 
       val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
 
       val future: Future[HttpResponse] = pipeline(Get(s"http://127.0.0.1:8080/user/pending_in_friend_requests/$myUserId"))
-
       val pendingInFriendList = Await.result(future, 5 second)
-      println(pendingInFriendList.entity.data.asString.parseJson.prettyPrint)
+      val pendingInFriendRequests = pendingInFriendList.entity.asString.parseJson.convertTo[List[String]]
+      pendingInFriendRequests.foreach(pendingInFriendRequest => {
+        val addFriendReq = AddFriendReq(
+          userId = myUserId,
+          friendName = pendingInFriendRequest
+        )
+        val entity = HttpEntity(contentType = ContentType(MediaTypes.`application/json`, HttpCharsets.`UTF-8`), addFriendReq.toJson.toString)
 
-//      future onComplete {
-//        case Success(response) =>
-//          response.entity.asString.parseJson.convertTo[GetPendingInFriendsRsp].inFriendNames.foreach(println(_))
-//
-//        case Failure(error) =>
-//          println("Some error has occurred: " + error.getMessage)
+        val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
 
-//      }
+        val future: Future[HttpResponse] = pipeline(Post("http://127.0.0.1:8080/user/add_friend_request", entity))
+        future onComplete {
+          case Success(response) =>
+            println(response.entity.asString.parseJson.convertTo[AddFriendRsp].result)
+
+          case Failure(error) =>
+            println("Some error has occurred: " + error.getMessage)
+        }
+
+      })
+      val totalTimeDuration = Duration(5000, "millis")
+      context.system.scheduler.scheduleOnce(totalTimeDuration, self, GetPendingInFriendRequests)
+
   }
 }
 
