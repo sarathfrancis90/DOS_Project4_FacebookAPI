@@ -193,6 +193,26 @@ class FbServer extends Actor with ActorLogging {
         }
       }
 
+    case Update_InFriends_Remove(userId, friendId) =>
+      if (usersInFriends.get(userId).get.contains(friendId))
+        usersInFriends.get(userId).get.remove(usersInFriends.get(userId).get.indexWhere(x => {
+          x == friendId
+        }))
+
+    case Update_OutFriends_Remove(userId, friendId) =>
+      if (usersOutFriends.get(userId).get.contains(friendId))
+        usersOutFriends.get(userId).get.remove(usersOutFriends.get(userId).get.indexWhere(x => {
+          x == friendId
+        }))
+
+    case Update_OutFriends_Insert(userId, friendId) =>
+      if (!usersOutFriends.get(userId).get.contains(friendId))
+        usersOutFriends.get(userId).get.insert(0, friendId)
+
+    case Update_Friends_Insert(userId, friendId) =>
+      if (!usersFriends.get(userId).get.contains(friendId))
+        usersFriends.get(userId).get.insert(0, friendId)
+
     case CreateUserPostReq(userId, post) =>
       statsServerRef ! "CreateUserPostReq"
       post.from = userId

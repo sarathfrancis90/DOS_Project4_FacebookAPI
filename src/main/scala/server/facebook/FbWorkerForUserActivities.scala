@@ -218,32 +218,25 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
         myFbServerRef ! AddFriendRspToFbServer(s"Already friends with $friendName")
         // bookkeeping
         if (ownInFriends.contains(friendId))
-          ownInFriends.remove(ownInFriends.indexWhere(x => {
-            x == friendId
-          }))
+          myFbServerRef ! Update_InFriends_Remove(userId, friendId)
+
         if (ownOutFriends.contains(friendId))
-          ownOutFriends.remove(ownOutFriends.indexWhere(x => {
-            x == friendId
-          }))
+          myFbServerRef ! Update_OutFriends_Remove(userId, friendId)
       }
       else if (ownInFriends.contains(friendId)) {
-        ownInFriends.remove(ownInFriends.indexWhere(x => {
-          x == friendId
-        }))
-        ownFriends.insert(0, friendId)
+        myFbServerRef ! Update_InFriends_Remove(userId, friendId)
+        myFbServerRef ! Update_Friends_Insert(userId, friendId)
         myFbServerRef ! UpdateFriendNtf(friendId, userId)
         myFbServerRef ! AddFriendRspToFbServer(s"Now friends with $friendName")
         // bookkeeping
         if (ownOutFriends.contains(friendId))
-          ownOutFriends.remove(ownOutFriends.indexWhere(x => {
-            x == friendId
-          }))
+          myFbServerRef ! Update_OutFriends_Remove(userId, friendId)
       }
       else if (ownOutFriends.contains(friendId)) {
         myFbServerRef ! AddFriendRspToFbServer(s"Friend request was sent already to $friendName")
       }
       else {
-        ownOutFriends.insert(0, friendId)
+        myFbServerRef ! Update_OutFriends_Insert(userId, friendId)
         myFbServerRef ! UpdateFriendNtf(friendId, userId)
         myFbServerRef ! AddFriendRspToFbServer(s"Friend request sent to $friendName")
       }
