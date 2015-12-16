@@ -1,27 +1,21 @@
 package client
 
-import java.util.Calendar
-
 import akka.actor.{ActorSystem, _}
 import server.facebook._
 import server.http.FbJsonProtocol
 import spray.client.pipelining._
 import spray.http._
-import spray.json.{DefaultJsonProtocol, _}
+import spray.json._
 
 import scala.collection.mutable.ListBuffer
-import scala.concurrent.{Await, Future}
-import scala.util.{Random, Failure, Success}
-import scala.language.postfixOps
 import scala.concurrent.duration._
-
-/**
-  * Created by sarathfrancis on 12/10/15.
-  */
+import scala.concurrent.{Await, Future}
+import scala.language.postfixOps
+import scala.util.{Failure, Success}
 
 case object UserInit
 
-case class SignUpUser(UserID: Int)
+case class SignUpUser(someUniqueId: Int)
 
 case object RegisterPage
 
@@ -66,6 +60,7 @@ class Master extends Actor with ActorLogging {
       for (i <- 0 until fbUsers.length) {
         fbUsers(i) ! SignUpUser(i)
       }
+
     case DoneCreatingUser(userName, userId) =>
       val registeredUser = (userName, userId, sender)
       myRegisteredUsers += registeredUser
@@ -78,7 +73,7 @@ class Master extends Actor with ActorLogging {
 
     case "CreatePages" =>
       for (i <- 1 until totalPagesCount) {
-        fbPages += ActorSystem("dos-project-4").actorOf(Props(new Fbpage), name = i.toString)
+        fbPages += ActorSystem("dos-project-4").actorOf(Props(new FbPage), name = i.toString)
         fbPages(i) ! RegisterPage
       }
       for (fbPage <- fbPages) {
@@ -103,15 +98,15 @@ class FbUser extends Actor with ActorLogging {
 
   def receive = {
 
-    case SignUpUser(userID) =>
+    case SignUpUser(uniqueId) =>
       mySender = sender
-      myUserName = userID
+      myUserName = uniqueId
       val userNode = UserNode(
         id = "",
-        about = "Something about " + "user" + userID.toString,
+        about = "Something about " + "user" + uniqueId.toString,
         birthday = "01/01/1988",
-        email = "user" + userID.toString + "@ufl.edu",
-        first_name = "user" + userID.toString,
+        email = "user" + uniqueId.toString + "@ufl.edu",
+        first_name = "user" + uniqueId.toString,
         public_key = "public_key"
       )
       val entity = HttpEntity(contentType = ContentType(MediaTypes.`application/json`, HttpCharsets.`UTF-8`), userNode.toJson.toString)
@@ -127,16 +122,19 @@ class FbUser extends Actor with ActorLogging {
         case Failure(error) =>
           println("Some error has occurred: " + error.getMessage)
       }
+
     case RegisteredUsersList(registeredUserList) =>
       registeredUsersList = registeredUserList
       self ! AddFriends
 
     case AddFriends =>
       for (i <- myUserName + 5 until registeredUsersList.length by 5) {
+
         val addFriendReq = AddFriendReq(
           userId = myUserId,
           friendName = "user" + (i).toString
         )
+
         val entity = HttpEntity(contentType = ContentType(MediaTypes.`application/json`, HttpCharsets.`UTF-8`), addFriendReq.toJson.toString)
 
         val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
@@ -144,7 +142,7 @@ class FbUser extends Actor with ActorLogging {
         val future: Future[HttpResponse] = pipeline(Post("http://127.0.0.1:8080/user/add_friend_request", entity))
         future onComplete {
           case Success(response) =>
-          //                        println(response.entity.asString.parseJson.convertTo[AddFriendRsp].result)
+//            println(response.entity.asString.parseJson.convertTo[AddFriendRsp].result)
 
           case Failure(error) =>
             println("Some error has occurred: " + error.getMessage)
@@ -160,6 +158,7 @@ class FbUser extends Actor with ActorLogging {
       val future: Future[HttpResponse] = pipeline(Get(s"http://127.0.0.1:8080/user/pending_in_friend_requests/$myUserId"))
       val pendingInFriendList = Await.result(future, 5 second)
       val pendingInFriendRequests = pendingInFriendList.entity.asString.parseJson.convertTo[List[String]]
+
       pendingInFriendRequests.foreach(pendingInFriendRequest => {
         val addFriendReq = AddFriendReq(
           userId = myUserId,
@@ -179,23 +178,21 @@ class FbUser extends Actor with ActorLogging {
         }
 
       })
+
       val totalTimeDuration = Duration(5000, "millis")
       context.system.scheduler.scheduleOnce(totalTimeDuration, self, GetPendingInFriendRequests)
-
   }
 }
 
-class Fbpage extends Actor with ActorLogging {
+class FbPage extends Actor with ActorLogging {
 
   def receive = {
-
     case RegisterPage =>
-
-
   }
+
 }
 
-object FbSimulator {
+object FbSimulatorV2 {
 
   def main(args: Array[String]) {
     ActorSystem("dos-project-4").actorOf(Props(new Master), "Master") ! "MasterInit"

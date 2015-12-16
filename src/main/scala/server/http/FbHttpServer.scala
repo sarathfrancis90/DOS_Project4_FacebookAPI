@@ -42,7 +42,6 @@ object FbJsonProtocol extends DefaultJsonProtocol {
   implicit val addFriendRspFormat = jsonFormat1(AddFriendRsp)
   implicit val getPendingInFriendsRsp = jsonFormat1(GetPendingInFriendsRsp)
 
-
   implicit object NodeFormat extends RootJsonFormat[Node] {
     def write(n: Node) = n match {
       case post: PostNode => post.toJson
