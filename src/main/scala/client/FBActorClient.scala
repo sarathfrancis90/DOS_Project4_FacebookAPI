@@ -158,14 +158,17 @@ class FbUser extends Actor with ActorLogging {
 
       val future: Future[HttpResponse] = pipeline(Get(s"http://127.0.0.1:8080/user/pending_in_friend_requests/$myUserId"))
 
-      future onComplete {
-        case Success(response) =>
-          response.entity.asString.parseJson.convertTo[GetPendingInFriendsRsp].inFriendNames.foreach(println(_))
+      val pendingInFriendList = Await.result(future, 5 second)
+      println(pendingInFriendList.entity.data.asString.parseJson.prettyPrint)
 
-        case Failure(error) =>
-          println("Some error has occurred: " + error.getMessage)
+//      future onComplete {
+//        case Success(response) =>
+//          response.entity.asString.parseJson.convertTo[GetPendingInFriendsRsp].inFriendNames.foreach(println(_))
+//
+//        case Failure(error) =>
+//          println("Some error has occurred: " + error.getMessage)
 
-      }
+//      }
   }
 }
 
