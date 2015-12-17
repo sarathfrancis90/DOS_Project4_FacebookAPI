@@ -368,7 +368,7 @@ class FbServer extends Actor with ActorLogging {
 
     case GetFriendsReq(userId) =>
       statsServerRef ! "GetFriendsReq"
-      createFbWorkerForUserActivities(sender) ! GetFriendsReqToFbWorker(usersFriends.get(userId).get)
+      createFbWorkerForUserActivities(sender) ! GetFriendsReqToFbWorker(usersFriends.get(userId).get, usersFriendsSpecialKeys.get(userId).get)
 
     case GetFriendsRspToFbServer(friends) =>
       statsServerRef ! "GetFriendsRsp"
@@ -382,7 +382,7 @@ class FbServer extends Actor with ActorLogging {
       getRequestor(sender) ! CreateUserRsp(result, id)
 
     case GetFriendDetailsReq(userId, friendName) =>
-      val getFriendDetailsReqToFbWorker = GetFriendDetailsReqToFbWorker(usersFriends.get(userId).get, friendName)
+      val getFriendDetailsReqToFbWorker = GetFriendDetailsReqToFbWorker(usersFriends.get(userId).get, friendName, usersFriendsSpecialKeys.get(userId).get)
       createFbWorkerForUserActivities(sender) ! getFriendDetailsReqToFbWorker
 
     case GetFriendDetailsRspToFbServer(friendNode) =>
@@ -390,7 +390,11 @@ class FbServer extends Actor with ActorLogging {
 
     case AddSpecialKeyToFriendReq(userId, friendName, encrypted_special_key) =>
       val specialKey = (userId, encrypted_special_key)
-      usersFriendsSpecialKeys.get(getShaOf(friendName)).get.insert(0, specialKey)
+      val friendId = getShaOf(friendName)
+      if (usersFriendsSpecialKeys.get(friendId).get.find(x => {
+        x._1 == userId
+      }).isEmpty)
+        usersFriendsSpecialKeys.get(friendId).get.insert(0, specialKey)
       sender ! AddSpecialKeyToFriendRsp(true)
   }
 

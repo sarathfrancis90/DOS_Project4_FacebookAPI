@@ -20,7 +20,7 @@ object FbJsonProtocol extends DefaultJsonProtocol {
   implicit val userNodeFormat = jsonFormat7(UserNode)
   implicit val pageNodeFormat = jsonFormat5(PageNode)
   implicit val encryptedSecretKeyFormat = jsonFormat2(EncryptedSecretKey)
-  implicit val postNodeFormat = jsonFormat11(PostNode)
+  implicit val postNodeFormat = jsonFormat12(PostNode)
   implicit val friendListNodeFormat = jsonFormat3(FriendListNode)
   implicit val photoNodeFormat = jsonFormat8(PhotoNode)
   implicit val albumNodeFormat = jsonFormat9(AlbumNode)

@@ -174,7 +174,7 @@ case class GetPendingOutFriendsRsp(outFriendNames: List[String])
 
 case class GetFriendsReq(userId: String)
 
-case class GetFriendsReqToFbWorker(ownFriends: ListBuffer[String])
+case class GetFriendsReqToFbWorker(ownFriends: ListBuffer[String], friendsSpecialKeys: ListBuffer[(String, String)])
 
 case class GetFriendsRspToFbServer(friends: List[UserNode])
 
@@ -190,7 +190,7 @@ case class CreateUserRsp(result: Boolean, id: String)
 
 case class GetFriendDetailsReq(userId: String, friendName: String)
 
-case class GetFriendDetailsReqToFbWorker(ownFriends: ListBuffer[String], friendName: String)
+case class GetFriendDetailsReqToFbWorker(ownFriends: ListBuffer[String], friendName: String, friendsSpecialKeys: ListBuffer[(String, String)])
 
 case class GetFriendDetailsRspToFbServer(friendNode: Option[UserNode])
 

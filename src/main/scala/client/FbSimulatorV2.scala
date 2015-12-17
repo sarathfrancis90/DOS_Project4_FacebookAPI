@@ -249,6 +249,7 @@ class FbUser extends Actor with ActorLogging {
         created_time = now,
         description = "",
         from = myUserId,
+        from_name = "",
         message = encryptedPostMessageAsString,
         encrypted_secret_keys = encryptedAesKeys.toList,
         to = List.empty,
