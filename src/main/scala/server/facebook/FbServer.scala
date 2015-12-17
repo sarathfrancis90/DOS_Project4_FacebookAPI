@@ -22,6 +22,7 @@ class FbServer extends Actor with ActorLogging {
   var usersFriends: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
   var usersInFriends: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
   var usersOutFriends: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
+  var usersFriendsSpecialKeys: mutable.HashMap[String, ListBuffer[(String, String)]] = new mutable.HashMap[String, ListBuffer[(String, String)]]()
 
   var pages: mutable.HashMap[String, Node] = new mutable.HashMap[String, Node]()
   var pagesLikedUsers: mutable.HashMap[String, ListBuffer[String]] = new mutable.HashMap[String, ListBuffer[String]]()
@@ -386,6 +387,11 @@ class FbServer extends Actor with ActorLogging {
 
     case GetFriendDetailsRspToFbServer(friendNode) =>
       getRequestor(sender) ! GetFriendDetailsRsp(friendNode)
+
+    case AddSpecialKeyToFriendReq(userId, friendName, encrypted_special_key) =>
+      val specialKey = (userId, encrypted_special_key)
+      usersFriendsSpecialKeys.get(getShaOf(friendName)).get.insert(0, specialKey)
+      sender ! AddSpecialKeyToFriendRsp(true)
   }
 
   def addToDb(db: mutable.HashMap[String, Node], key: String, value: Node): CreateFbNodeRsp = {
@@ -406,6 +412,7 @@ class FbServer extends Actor with ActorLogging {
         usersFriends.put(key, ListBuffer.empty)
         usersInFriends.put(key, ListBuffer.empty)
         usersOutFriends.put(key, ListBuffer.empty)
+        usersFriendsSpecialKeys.put(key, ListBuffer.empty)
       }
       else if (db == albums) {
         albumsPhotos.put(key, ListBuffer.empty)

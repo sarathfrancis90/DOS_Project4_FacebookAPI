@@ -1,6 +1,10 @@
 package client
 
-import java.util
+import java.security._
+import java.security.spec.X509EncodedKeySpec
+import java.util.{Base64, Calendar}
+import javax.crypto.spec.SecretKeySpec
+import javax.crypto.{Cipher, KeyGenerator, SecretKey}
 
 import akka.actor.{ActorSystem, _}
 import server.facebook._
@@ -8,16 +12,12 @@ import server.http.FbJsonProtocol
 import spray.client.pipelining._
 import spray.http._
 import spray.json._
+
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
-import scala.util.{Random, Failure, Success}
-import java.security._
-import java.security.spec.X509EncodedKeySpec
-import java.util.{Calendar, Base64}
-import javax.crypto.spec.SecretKeySpec
-import javax.crypto.{Cipher, KeyGenerator, SecretKey}
+import scala.util.{Failure, Success}
 
 
 case class SignUpUser(someUniqueId: Int)
@@ -124,7 +124,8 @@ class FbUser extends Actor with ActorLogging {
         birthday = "01/01/1988",
         email = "user" + myUserName.toString + "@ufl.edu",
         first_name = "user" + myUserName.toString,
-        public_key = new String(Base64.getEncoder.encode(keyPair.getPublic.getEncoded))
+        public_key = new String(Base64.getEncoder.encode(keyPair.getPublic.getEncoded)),
+        encrypted_special_key = ""
       )
 
       val entity = HttpEntity(contentType = ContentType(MediaTypes.`application/json`, HttpCharsets.`UTF-8`), userNode.toJson.toString)
@@ -243,7 +244,7 @@ class FbUser extends Actor with ActorLogging {
         encryptedAesKeys += encryptedPrivateKey
       }
 
-      val postNodeV2 = PostNode(
+      val post = PostNode(
         id = "",
         created_time = now,
         description = "",
@@ -251,12 +252,15 @@ class FbUser extends Actor with ActorLogging {
         message = encryptedPostMessageAsString,
         encrypted_secret_keys = encryptedAesKeys.toList,
         to = List.empty,
-        updated_time = now
+        updated_time = now,
+        encrypted = true,
+        to_all_friends = false,
+        message_iv = ""
       )
 
       val createUserPostReq = CreateUserPostReq(
         userId = myUserId,
-        post = postNodeV2
+        post = post
       )
       val entity = HttpEntity(contentType = ContentType(MediaTypes.`application/json`, HttpCharsets.`UTF-8`), createUserPostReq.toJson.toString)
 

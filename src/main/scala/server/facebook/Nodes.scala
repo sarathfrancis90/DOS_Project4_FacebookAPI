@@ -7,7 +7,8 @@ case class UserNode(var id: String,
                     var birthday: String,
                     var email: String,
                     var first_name: String,
-                    var public_key: String) extends Node
+                    var public_key: String,
+                    var encrypted_special_key: String) extends Node
 
 case class PageNode(var id: String,
                     var about: String,
@@ -22,7 +23,10 @@ case class PostNode(var id: String,
                     var message: String,
                     var encrypted_secret_keys: List[EncryptedSecretKey],
                     var to: List[String],
-                    var updated_time: String) extends Node
+                    var updated_time: String,
+                    var encrypted: Boolean,
+                    var to_all_friends: Boolean,
+                    var message_iv: String) extends Node
 
 case class FriendListNode(var id: String,
                           var name: String,

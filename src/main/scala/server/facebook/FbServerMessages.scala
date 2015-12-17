@@ -203,3 +203,7 @@ case class Update_OutFriends_Remove(userId: String, friendId: String)
 case class Update_OutFriends_Insert(userId: String, friendId: String)
 
 case class Update_Friends_Insert(userId: String, friendId: String)
+
+case class AddSpecialKeyToFriendReq(userId: String, friendName: String, encrypted_special_key: String)
+
+case class AddSpecialKeyToFriendRsp(result: Boolean)
