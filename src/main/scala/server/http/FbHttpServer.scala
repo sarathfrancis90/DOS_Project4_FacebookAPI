@@ -43,6 +43,8 @@ object FbJsonProtocol extends DefaultJsonProtocol {
   implicit val addFriendRspFormat = jsonFormat1(AddFriendRsp)
   implicit val getPendingInFriendsRsp = jsonFormat1(GetPendingInFriendsRsp)
   implicit val createUserRspFormat = jsonFormat2(CreateUserRsp)
+  implicit val addSpecialKeyToFriendReqFormat = jsonFormat3(AddSpecialKeyToFriendReq)
+  implicit val addSpecialKeyToFriendRspFormat = jsonFormat1(AddSpecialKeyToFriendRsp)
 
   implicit object NodeFormat extends RootJsonFormat[Node] {
     def write(n: Node) = n match {
@@ -382,6 +384,15 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
             pendingOutFriendRequests += outFriendName
           })
           requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, pendingOutFriendRequests.toList.take(10).toJson.toString))
+      }
+
+    case HttpRequest(POST, Uri.Path("/user/add_special_key"), _, entity, _) =>
+      val requestor = sender
+      val addSpecialKeyToFriendReq = entity.asString.parseJson.convertTo[AddSpecialKeyToFriendReq]
+      val future: Future[AddSpecialKeyToFriendRsp] = (fbServer ? addSpecialKeyToFriendReq).mapTo[AddSpecialKeyToFriendRsp]
+      future.onSuccess {
+        case result: AddSpecialKeyToFriendRsp =>
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, result.toJson.toString))
       }
   }
 }
