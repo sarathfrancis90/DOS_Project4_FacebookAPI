@@ -357,7 +357,7 @@ class FbUser extends Actor with ActorLogging {
           encrypted_special_key = encryptedAesKeyOfUserAsString
         )
         val entity = HttpEntity(contentType = ContentType(MediaTypes.`application/json`, HttpCharsets.`UTF-8`), addSpecialKeyToFriendReq.toJson.toString)
-        val addSpecialKeyToFriendReqfuture: Future[HttpResponse] = postPipeline(Post("http://127.0.0.1:8080/user/add_friend_request", entity))
+        val addSpecialKeyToFriendReqfuture: Future[HttpResponse] = postPipeline(Post("http://127.0.0.1:8080/user/add_special_key", entity))
         addSpecialKeyToFriendReqfuture onComplete {
           case Success(addSpecialKeyToFriendReqfutureresponse) =>
             println("Add specialkey to friend " + addSpecialKeyToFriendReqfutureresponse.entity.asString.parseJson.convertTo[AddSpecialKeyToFriendRsp].result)
