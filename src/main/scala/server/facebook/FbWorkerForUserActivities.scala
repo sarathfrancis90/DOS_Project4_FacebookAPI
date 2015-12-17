@@ -20,20 +20,23 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
     case "Init" =>
       myFbServerRef = sender
 
-    case CreateUserPostReqToFbWorker(post, ownPosts) =>
+    case CreateUserPostReqToFbWorker(post, ownPosts, ownFriends) =>
 
       val futureGetFbNodeRsp: Future[GetFbNodeRsp] = (myFbServerRef ? GetFbNodeReq("user", post.from)).mapTo[GetFbNodeRsp]
       val getFbNodeRsp = Await.result(futureGetFbNodeRsp, someTimeout.duration)
       post.from_name = getFbNodeRsp.node.asInstanceOf[UserNode].first_name
 
-
-      val to: ListBuffer[String] = new ListBuffer[String]()
-      post.encrypted_secret_keys.foreach(encrypted_secret_key => {
-        if (!encrypted_secret_key.to.equals("self"))
-          to += encrypted_secret_key.to
-      })
-
-      post.to = to.toList
+      if (!post.to_all_friends) {
+        if (post.encrypted) {
+          val to: ListBuffer[String] = new ListBuffer[String]()
+          post.encrypted_secret_keys.foreach(encrypted_secret_key => {
+            if (!encrypted_secret_key.to.equals("self"))
+              to += encrypted_secret_key.to
+          })
+          post.to = to.toList
+        }
+        else post.to = parseTextAndFindUsernames(post.message)
+      } else post.to = ownFriends.toList
 
       val future: Future[CreateFbNodeRsp] = (myFbServerRef ? CreateFbNodeReq("post", post)).mapTo[CreateFbNodeRsp]
       val createFbNodeRsp = Await.result(future, someTimeout.duration)

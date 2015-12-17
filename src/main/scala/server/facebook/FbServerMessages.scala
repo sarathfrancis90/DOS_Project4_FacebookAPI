@@ -12,7 +12,7 @@ case class GetFbNodeRsp(node: Node)
 
 case object PleaseKillYourself
 
-case class CreateUserPostReqToFbWorker(post: PostNode, ownPosts: ListBuffer[String])
+case class CreateUserPostReqToFbWorker(post: PostNode, ownPosts: ListBuffer[String], ownFriends: ListBuffer[String])
 
 case class CreateUserPostRspToFbServer(postId: String)
 

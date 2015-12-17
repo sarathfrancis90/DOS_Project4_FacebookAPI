@@ -216,7 +216,7 @@ class FbServer extends Actor with ActorLogging {
     case CreateUserPostReq(userId, post) =>
       statsServerRef ! "CreateUserPostReq"
       post.from = userId
-      createFbWorkerForUserActivities(sender) ! CreateUserPostReqToFbWorker(post, usersOwnPosts.get(userId).get)
+      createFbWorkerForUserActivities(sender) ! CreateUserPostReqToFbWorker(post, usersOwnPosts.get(userId).get, usersFriends.get(userId).get)
 
     case CreateUserPostRspToFbServer(postId) =>
       statsServerRef ! "CreateUserPostRsp"
