@@ -110,6 +110,7 @@ class FbUser extends Actor with ActorLogging {
   var myUserName: Int = _
   var keyPair: KeyPair = _
   var keyAes: SecretKey = _
+  var userAesKey: SecretKey = _
 
   var registeredUsersList: List[(String, String, ActorRef)] = _
 
@@ -125,6 +126,8 @@ class FbUser extends Actor with ActorLogging {
       myUserName = uniqueId
       keyPairGeneratorRsa.initialize(1024, secureRandom)
       keyPair = keyPairGeneratorRsa.genKeyPair()
+      userAesKey = keyGeneratorAes.generateKey()
+
 
       val userNode = UserNode(
         id = "",
@@ -317,18 +320,51 @@ class FbUser extends Actor with ActorLogging {
           friendName = pendingInFriendRequest
         )
         val entity = HttpEntity(contentType = ContentType(MediaTypes.`application/json`, HttpCharsets.`UTF-8`), addFriendReq.toJson.toString)
-        val future: Future[HttpResponse] = postPipeline(Post("http://127.0.0.1:8080/user/add_friend_request", entity))
-        future onComplete {
-          case Success(response) =>
-            println(response.entity.asString.parseJson.convertTo[AddFriendRsp].result)
-
+        val addFriendReqfuture: Future[HttpResponse] = postPipeline(Post("http://127.0.0.1:8080/user/add_friend_request", entity))
+        addFriendReqfuture onComplete {
+          case Success(addFriendReqfutureresponse) =>
+            println(addFriendReqfutureresponse.entity.asString.parseJson.convertTo[AddFriendRsp].result)
           case Failure(error) =>
             println("Some error has occurred: " + error.getMessage)
         }
       })
-    //      val totalTimeDuration = Duration(2000, "millis")
-    //      context.system.scheduler.scheduleOnce(totalTimeDuration, self, "CreateUserPost")
+      self ! "ShareAesKey"
+      val totalTimeDuration = Duration(2000, "millis")
+      context.system.scheduler.scheduleOnce(totalTimeDuration, self, "AcceptPendingInFriendRequests")
 
+
+    case "ShareAesKey" =>
+      //      val getFriendDetailsReqfuture: Future[HttpResponse] = getPipeline(Get(s"http://127.0.0.1:8080/user/pending_in_friend_requests/$myUserId"))
+      //      getFriendDetailsReqfuture onComplete {
+      //        case Success(getFriendDetailsReqresponse) =>
+      //          println(getFriendDetailsReqresponse.entity.asString.parseJson.convertTo[GetFriendDetailsRsp].friendNode)
+      //        case Failure(error) =>
+      //          println("Some error has occurred: " + error.getMessage)
+      //      }
+      val future: Future[HttpResponse] = getPipeline(Get(s"http://127.0.0.1:8080/user/get_friends/$myUserId"))
+      val response = Await.result(future, 5 second)
+      val friends = response.entity.asString.parseJson.convertTo[List[UserNode]]
+      println("***Friends for the user: " + myUserName)
+      friends.foreach(friend => {
+        val publicKeyOfFriend: PublicKey =
+          KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(
+            Base64.getDecoder.decode(friend.public_key.getBytes)))
+        cipherRsa.init(Cipher.ENCRYPT_MODE, publicKeyOfFriend)
+        val encryptedAesKeyOfUserAsString = new String(Base64.getEncoder.encode(cipherRsa.doFinal(userAesKey.getEncoded)))
+        val addSpecialKeyToFriendReq = AddSpecialKeyToFriendReq (
+        userId = myUserId,
+        friendName = friend.first_name,
+          encrypted_special_key = encryptedAesKeyOfUserAsString
+        )
+        val entity = HttpEntity(contentType = ContentType(MediaTypes.`application/json`, HttpCharsets.`UTF-8`), addSpecialKeyToFriendReq.toJson.toString)
+        val addSpecialKeyToFriendReqfuture: Future[HttpResponse] = postPipeline(Post("http://127.0.0.1:8080/user/add_friend_request", entity))
+        addSpecialKeyToFriendReqfuture onComplete {
+          case Success(addSpecialKeyToFriendReqfutureresponse) =>
+            println("Add specialkey to friend " + addSpecialKeyToFriendReqfutureresponse.entity.asString.parseJson.convertTo[AddSpecialKeyToFriendRsp].result)
+          case Failure(error) =>
+            println("Some error has occurred: " + error.getMessage)
+        }
+      })
 
     case "GetFriendsList" =>
 
@@ -366,7 +402,6 @@ class FbPage extends Actor with ActorLogging {
   def receive = {
 
 
-
     case StartPageActivities(registeredPagesIn, registeredUsersIn) =>
       log.info("Pages starting to create posts and share photos")
       mySender = sender
@@ -375,8 +410,8 @@ class FbPage extends Actor with ActorLogging {
       self ! "CreatepagePost"
 
     case "DoneCreatingPagePost" =>
-          self ! "PostAPhotoByPage"
-      //      Thread.sleep(10)
+      self ! "PostAPhotoByPage"
+    //      Thread.sleep(10)
 
     case "DonePostingPhotoFrompage" =>
       //      Thread.sleep(10)

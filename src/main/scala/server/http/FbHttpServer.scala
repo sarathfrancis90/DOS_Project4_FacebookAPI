@@ -166,6 +166,15 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
         case result: RemoveUserLikedPageRsp =>
           requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, result.toJson.toString))
       }
+    case HttpRequest(POST, Uri.Path("/user/share_key"), _, entity, _) =>
+      val requestor = sender
+      val addSpecialKeyToFriendReq = entity.asString.parseJson.convertTo[AddSpecialKeyToFriendReq]
+      val future: Future[AddSpecialKeyToFriendRsp] = (fbServer ? addSpecialKeyToFriendReq).mapTo[AddSpecialKeyToFriendRsp]
+      future.onSuccess {
+        case result: AddSpecialKeyToFriendRsp =>
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, result.toJson.toString))
+      }
+
 
     case HttpRequest(POST, Uri.Path("/user/add_friend_request"), _, entity, _) =>
       val requestor = sender
@@ -191,6 +200,22 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
             eventsOnly += event._2
           })
           requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, eventsOnly.toList.take(10).toJson.toString))
+      }
+
+    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/get_frienddetails" =>
+      val requestor = sender
+      val urlSplit = path.split('/')
+      val friendName = urlSplit.last
+      val userId = urlSplit(urlSplit.size - 2)
+      val getFriendDetailsReq = GetFriendDetailsReq(
+        userId = userId,
+        friendName = friendName
+      )
+      val future: Future[GetFriendDetailsRsp] = (fbServer ? getFriendDetailsReq).mapTo[GetFriendDetailsRsp]
+      future.onSuccess {
+        case result: GetFriendDetailsRsp =>
+            val friendDetails = result.friendNode
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`,friendDetails.toJson.toString))
       }
 
     case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/own_photos" =>
