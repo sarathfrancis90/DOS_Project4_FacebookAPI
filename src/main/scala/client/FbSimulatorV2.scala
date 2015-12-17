@@ -26,12 +26,12 @@ case class RegisterPage(someUniqueId: Int)
 
 case class StartUserActivities(registeredUsersList: List[(String, String, ActorRef)])
 
-case class StartPageActivities(registeredPagesList: List[(String, String, ActorRef)])
+case class StartPageActivities(registeredPagesList: List[(String, String, ActorRef)], registeredUsersList: List[(String, String, ActorRef)])
 
 
 case class DoneCreatingUser(userName: String, userId: String)
 
-case class DoneCreatingPage(pageName: String, pageId: String)
+case class DoneRegisteringPage(pageName: String, pageId: String)
 
 
 class Master extends Actor with ActorLogging {
@@ -39,7 +39,7 @@ class Master extends Actor with ActorLogging {
   var fbUsers: ListBuffer[ActorRef] = new ListBuffer[ActorRef]()
   var fbPages: ListBuffer[ActorRef] = new ListBuffer[ActorRef]()
   val totalUsersCount = 50
-  val totalPagesCount = 100
+  val totalPagesCount = 20
   val percentageOfUsersWhoClickLike: Int = 64
   val averageNumberOfPagesLikedByAUser: Int = 40
   val percentageOfActiveUsers: Double = 58
@@ -63,17 +63,24 @@ class Master extends Actor with ActorLogging {
       val registeredUser = (userName, userId, sender)
       myRegisteredUsers += registeredUser
       if (myRegisteredUsers.length == totalUsersCount) {
+        self ! "CreatePages"
         log.info("Done creating " + myRegisteredUsers.length.toString + " users")
         for (i <- 1 until fbUsers.length) {
           fbUsers(i) ! StartUserActivities(myRegisteredUsers.toList)
         }
       }
-    case DoneCreatingPage(pageName, pageId) =>
+    case DoneRegisteringPage(pageName, pageId) =>
       val registeredPage = (pageName, pageId, sender)
       myRegisteredPages += registeredPage
-      if (myRegisteredPages.length == totalPagesCount) log.info("Done creating " + myRegisteredPages.length.toString + " pages")
+      if (myRegisteredPages.length == totalPagesCount) {
+        log.info("Done creating " + myRegisteredPages.length.toString + " pages")
+        for (i <- 1 until fbPages.length) {
+          fbUsers(i) ! StartPageActivities(myRegisteredPages.toList, myRegisteredUsers.toList)
+        }
+      }
+
     case "CreatePages" =>
-      for (i <- 1 until totalPagesCount) {
+      for (i <- 0 until totalPagesCount) {
         fbPages += ActorSystem("dos-project-4").actorOf(Props(new FbPage), name = i.toString)
         fbPages(i) ! "RegisterPage"
       }
@@ -110,6 +117,7 @@ class FbUser extends Actor with ActorLogging {
   val postPipeline: HttpRequest => Future[HttpResponse] = sendReceive
 
   var myFriendList: ListBuffer[(String)] = _
+
   def receive = {
 
     case SignUpUser(uniqueId) =>
@@ -349,11 +357,41 @@ class FbPage extends Actor with ActorLogging {
   var myPageName: Int = _
 
   var registeredUsersList: List[(String, String, ActorRef)] = _
+  var registeredPagesList: List[(String, String, ActorRef)] = _
+
 
   val getPipeline: HttpRequest => Future[HttpResponse] = sendReceive
   val postPipeline: HttpRequest => Future[HttpResponse] = sendReceive
 
   def receive = {
+
+
+
+    case StartPageActivities(registeredPagesIn, registeredUsersIn) =>
+      log.info("Pages starting to create posts and share photos")
+      mySender = sender
+      registeredPagesList = registeredPagesIn
+      registeredUsersList = registeredUsersIn
+      self ! "CreatepagePost"
+
+    case "DoneCreatingPagePost" =>
+          self ! "PostAPhotoByPage"
+      //      Thread.sleep(10)
+
+    case "DonePostingPhotoFrompage" =>
+      //      Thread.sleep(10)
+      self ! "CreatepagePost"
+
+    case "CreatepagePost" =>
+
+      val now = Calendar.getInstance().getTime.toString
+
+      self ! "DoneCreatingPagePost"
+
+    case "PostAPhotoByPage" =>
+
+      self ! "DonePostingPhotoFrompage"
+
 
     case RegisterPage(uniqueId) =>
 
@@ -373,7 +411,8 @@ class FbPage extends Actor with ActorLogging {
 
       future onComplete {
         case Success(response) =>
-          mySender ! DoneCreatingPage(pageNode.name, response.entity.asString.parseJson.convertTo[CreateFbNodeRsp].id)
+          myPageId = response.entity.asString.parseJson.convertTo[CreateFbNodeRsp].id
+          mySender ! DoneRegisteringPage(pageNode.name, myPageId)
 
         case Failure(error) =>
           println("Some error has occurred: " + error.getMessage)
