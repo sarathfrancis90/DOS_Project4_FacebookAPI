@@ -118,6 +118,8 @@ class FbUser extends Actor with ActorLogging {
   val postPipeline: HttpRequest => Future[HttpResponse] = sendReceive
 
   var myFriendList: ListBuffer[(String)] = _
+  var postType: String = "tagged"
+
 
   def receive = {
 
@@ -208,6 +210,7 @@ class FbUser extends Actor with ActorLogging {
 
       ownPosts.foreach(ownPost => {
 
+        if(val postType = ownPost.to_all_friends == true)
         val secretKey = new SecretKeySpec(cipherRsa.doFinal(Base64.getDecoder.decode(ownPost.encrypted_secret_keys.find(x => {
           x.to == "self"
         }).get.encrypted_secret_key.getBytes)), "AES")
@@ -220,72 +223,116 @@ class FbUser extends Actor with ActorLogging {
 
     case "CreateUserPost" =>
 
-      val now = Calendar.getInstance().getTime.toString
-      val getFriendListFuture: Future[HttpResponse] = getPipeline(Get(s"http://127.0.0.1:8080/user/get_friends/$myUserId"))
-      val getFriendListFutureResponse = Await.result(getFriendListFuture, 5 second)
-      val friends = getFriendListFutureResponse.entity.asString.parseJson.convertTo[List[UserNode]]
-      val encryptedAesKeys: ListBuffer[EncryptedSecretKey] = new ListBuffer[EncryptedSecretKey]()
-      val plainTextPostMessage = myUserName + " posting a message " + " at " + now
-      println("Iamposting - " + plainTextPostMessage)
+      if (postType == "tagged") {
+        postType = "to_all"
 
-      keyAes = keyGeneratorAes.generateKey()
-      cipherRsa.init(Cipher.ENCRYPT_MODE, keyPair.getPublic)
-      val encryptedAesKeyAsString = new String(Base64.getEncoder.encode(cipherRsa.doFinal(keyAes.getEncoded)))
+        val now = Calendar.getInstance().getTime.toString
+        val getFriendListFuture: Future[HttpResponse] = getPipeline(Get(s"http://127.0.0.1:8080/user/get_friends/$myUserId"))
+        val getFriendListFutureResponse = Await.result(getFriendListFuture, 5 second)
+        val friends = getFriendListFutureResponse.entity.asString.parseJson.convertTo[List[UserNode]]
+        val encryptedAesKeys: ListBuffer[EncryptedSecretKey] = new ListBuffer[EncryptedSecretKey]()
+        val plainTextPostMessage = myUserName + " posting a message " + " at " + now
 
-      val encryptedAesKey = EncryptedSecretKey(
-        to = "self",
-        encrypted_secret_key = encryptedAesKeyAsString
-      )
-      encryptedAesKeys += encryptedAesKey
+        println("Iamposting - " + plainTextPostMessage)
 
-      cipherAes.init(Cipher.ENCRYPT_MODE, keyAes)
-      val encryptedPostMessageAsString = new String(Base64.getEncoder.encode(cipherAes.doFinal(plainTextPostMessage.getBytes)))
 
-      for (i <- friends.indices by 5) {
-        val publicKeyOfFriend: PublicKey =
-          KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(
-            Base64.getDecoder.decode(friends(i).public_key.getBytes)))
-        cipherRsa.init(Cipher.ENCRYPT_MODE, publicKeyOfFriend)
+        keyAes = keyGeneratorAes.generateKey()
+        cipherRsa.init(Cipher.ENCRYPT_MODE, keyPair.getPublic)
         val encryptedAesKeyAsString = new String(Base64.getEncoder.encode(cipherRsa.doFinal(keyAes.getEncoded)))
 
-        val encryptedPrivateKey = EncryptedSecretKey(
-          to = friends(i).first_name,
+        val encryptedAesKey = EncryptedSecretKey(
+          to = "self",
           encrypted_secret_key = encryptedAesKeyAsString
         )
-        encryptedAesKeys += encryptedPrivateKey
+        encryptedAesKeys += encryptedAesKey
+
+        cipherAes.init(Cipher.ENCRYPT_MODE, keyAes)
+        val encryptedPostMessageAsString = new String(Base64.getEncoder.encode(cipherAes.doFinal(plainTextPostMessage.getBytes)))
+
+        for (i <- friends.indices by 5) {
+          val publicKeyOfFriend: PublicKey =
+            KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(
+              Base64.getDecoder.decode(friends(i).public_key.getBytes)))
+          cipherRsa.init(Cipher.ENCRYPT_MODE, publicKeyOfFriend)
+          val encryptedAesKeyAsString = new String(Base64.getEncoder.encode(cipherRsa.doFinal(keyAes.getEncoded)))
+
+          val encryptedPrivateKey = EncryptedSecretKey(
+            to = friends(i).first_name,
+            encrypted_secret_key = encryptedAesKeyAsString
+          )
+          encryptedAesKeys += encryptedPrivateKey
+        }
+
+        val post = PostNode(
+          id = "",
+          created_time = now,
+          description = "",
+          from = myUserId,
+          from_name = "",
+          message = encryptedPostMessageAsString,
+          encrypted_secret_keys = encryptedAesKeys.toList,
+          to = List.empty,
+          updated_time = now,
+          encrypted = true,
+          to_all_friends = false,
+          message_iv = ""
+        )
+
+        val createUserPostReq = CreateUserPostReq(
+          userId = myUserId,
+          post = post
+        )
+        val entity = HttpEntity(contentType = ContentType(MediaTypes.`application/json`, HttpCharsets.`UTF-8`), createUserPostReq.toJson.toString)
+
+        val future: Future[HttpResponse] = postPipeline(Post("http://127.0.0.1:8080/user/post", entity))
+        future onComplete {
+          case Success(response) =>
+            println("Ihaveposted" + response.entity.asString)
+
+          case Failure(error) =>
+            println("Some error has occurred: " + error.getMessage)
+        }
+
+      }
+      if (postType == "to_all") {
+        postType = "tagged"
+
+        val now = Calendar.getInstance().getTime.toString
+        val plainTextBroadcastMessage = myUserName + " posting a message for everyone at " + now
+        cipherAes.init(Cipher.ENCRYPT_MODE, userAesKey)
+        val encryptedPostMessageAsString = new String(Base64.getEncoder.encode(cipherAes.doFinal(plainTextBroadcastMessage.getBytes)))
+        val post = PostNode(
+          id = "",
+          created_time = now,
+          description = "",
+          from = myUserId,
+          from_name = "",
+          message = encryptedPostMessageAsString,
+          encrypted_secret_keys = List.empty,
+          to = List.empty,
+          updated_time = now,
+          encrypted = true,
+          to_all_friends = true,
+          message_iv = ""
+        )
+        val createUserPostReq = CreateUserPostReq(
+          userId = myUserId,
+          post = post
+        )
+        val entity = HttpEntity(contentType = ContentType(MediaTypes.`application/json`, HttpCharsets.`UTF-8`), createUserPostReq.toJson.toString)
+
+        val future: Future[HttpResponse] = postPipeline(Post("http://127.0.0.1:8080/user/post", entity))
+        future onComplete {
+          case Success(response) =>
+            println("Ihaveposted for everyone" + response.entity.asString)
+
+          case Failure(error) =>
+            println("Some error has occurred: " + error.getMessage)
+        }
+        self ! "DoneCreatingPost"
+
       }
 
-      val post = PostNode(
-        id = "",
-        created_time = now,
-        description = "",
-        from = myUserId,
-        from_name = "",
-        message = encryptedPostMessageAsString,
-        encrypted_secret_keys = encryptedAesKeys.toList,
-        to = List.empty,
-        updated_time = now,
-        encrypted = true,
-        to_all_friends = false,
-        message_iv = ""
-      )
-
-      val createUserPostReq = CreateUserPostReq(
-        userId = myUserId,
-        post = post
-      )
-      val entity = HttpEntity(contentType = ContentType(MediaTypes.`application/json`, HttpCharsets.`UTF-8`), createUserPostReq.toJson.toString)
-
-      val future: Future[HttpResponse] = postPipeline(Post("http://127.0.0.1:8080/user/post", entity))
-      future onComplete {
-        case Success(response) =>
-          println("Ihaveposted" + response.entity.asString)
-
-        case Failure(error) =>
-          println("Some error has occurred: " + error.getMessage)
-      }
-
-      self ! "DoneCreatingPost"
 
     case "SendFriendRequests" =>
       for (i <- myUserName + 5 until registeredUsersList.length by 5) {
@@ -351,9 +398,9 @@ class FbUser extends Actor with ActorLogging {
             Base64.getDecoder.decode(friend.public_key.getBytes)))
         cipherRsa.init(Cipher.ENCRYPT_MODE, publicKeyOfFriend)
         val encryptedAesKeyOfUserAsString = new String(Base64.getEncoder.encode(cipherRsa.doFinal(userAesKey.getEncoded)))
-        val addSpecialKeyToFriendReq = AddSpecialKeyToFriendReq (
-        userId = myUserId,
-        friendName = friend.first_name,
+        val addSpecialKeyToFriendReq = AddSpecialKeyToFriendReq(
+          userId = myUserId,
+          friendName = friend.first_name,
           encrypted_special_key = encryptedAesKeyOfUserAsString
         )
         val entity = HttpEntity(contentType = ContentType(MediaTypes.`application/json`, HttpCharsets.`UTF-8`), addSpecialKeyToFriendReq.toJson.toString)
