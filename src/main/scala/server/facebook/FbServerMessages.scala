@@ -110,7 +110,7 @@ case class GetUserFeedReq(userId: String, typeOfPosts: String, startFrom: String
 
 case class GetUserFeedRsp(posts: List[PostNode])
 
-case class CreateUserPostReq(userId: String, post: PostNode)
+case class CreateUserPostReq(userId: String, post: PostNodeV2)
 
 case class CreateUserPostRsp(postId: String)
 
