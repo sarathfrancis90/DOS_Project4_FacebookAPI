@@ -241,8 +241,9 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
           val posts: ListBuffer[Node] = new ListBuffer[Node]()
           result.posts.foreach(post => {
             posts += post
+            println("Sendingposttoclient - " + post.toString)
           })
-          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, posts.toList.take(10).toJson.toString))
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, posts.toList.toJson.toString))
       }
 
     case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/tagged_posts" =>
@@ -260,7 +261,7 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
           result.posts.foreach(post => {
             posts += post
           })
-          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, posts.toList.take(10).toJson.toString))
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, posts.toList.toJson.toString))
       }
 
     case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/get_albums" =>

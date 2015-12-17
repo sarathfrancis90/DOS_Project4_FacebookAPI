@@ -110,7 +110,6 @@ class FbUser extends Actor with ActorLogging {
   val postPipeline: HttpRequest => Future[HttpResponse] = sendReceive
 
   var myFriendList: ListBuffer[(String)] = _
-
   def receive = {
 
     case SignUpUser(uniqueId) =>
@@ -151,18 +150,82 @@ class FbUser extends Actor with ActorLogging {
       Thread.sleep(1000)
       self ! "CreateUserPost"
 
+    case "DoneCreatingPost" =>
+      self ! "ViewOwnPosts"
+      self ! "ViewTaggedPosts"
+
+    case "DoneViewingTaggedPosts" =>
+      Thread.sleep(10000)
+
+    case "ViewTaggedPosts" =>
+
+      Thread.sleep(1000)
+      println("Tryingtoseetaggedposts")
+      val viewTaggedPostFuture: Future[HttpResponse] = getPipeline(Get(s"http://127.0.0.1:8080/user/tagged_posts/$myUserId"))
+      val viewTaggedPostFutureResponse = Await.result(viewTaggedPostFuture, 5 second)
+      val taggedPosts = viewTaggedPostFutureResponse.entity.asString.parseJson.convertTo[List[PostNode]]
+
+      cipherRsa.init(Cipher.DECRYPT_MODE, keyPair.getPrivate)
+
+      taggedPosts.foreach(taggedPost => {
+
+        val secretKey = new SecretKeySpec(cipherRsa.doFinal(Base64.getDecoder.decode(taggedPost.encrypted_secret_keys.find(x => {
+          x.to == "user" + myUserName.toString
+        }).get.encrypted_secret_key.getBytes)), "AES")
+
+        cipherAes.init(Cipher.DECRYPT_MODE, secretKey)
+
+        val plainMessage = new String(cipherAes.doFinal(Base64.getDecoder.decode(taggedPost.message.getBytes)))
+        println("Seeingtaggedpost - " + plainMessage)
+      })
+      self ! "DoneViewingTaggedPosts"
+
+    case "ViewOwnPosts" =>
+
+      Thread.sleep(1000)
+      println("Tryingtoseemyposts")
+
+      val viewOwnPostFuture: Future[HttpResponse] = getPipeline(Get(s"http://127.0.0.1:8080/user/own_posts/$myUserId"))
+      val viewOwnPostFutureResponse = Await.result(viewOwnPostFuture, 5 second)
+      val ownPosts = viewOwnPostFutureResponse.entity.asString.parseJson.convertTo[List[PostNode]]
+
+      if (ownPosts.isEmpty)
+        println("Seeingmypost - ")
+
+      cipherRsa.init(Cipher.DECRYPT_MODE, keyPair.getPrivate)
+
+      ownPosts.foreach(ownPost => {
+
+        val secretKey = new SecretKeySpec(cipherRsa.doFinal(Base64.getDecoder.decode(ownPost.encrypted_secret_keys.find(x => {
+          x.to == "self"
+        }).get.encrypted_secret_key.getBytes)), "AES")
+
+        cipherAes.init(Cipher.DECRYPT_MODE, secretKey)
+
+        val plainMessage = new String(cipherAes.doFinal(Base64.getDecoder.decode(ownPost.message.getBytes)))
+        println("Seeingmypost - " + plainMessage)
+      })
+
     case "CreateUserPost" =>
 
       val now = Calendar.getInstance().getTime.toString
-
       val getFriendListFuture: Future[HttpResponse] = getPipeline(Get(s"http://127.0.0.1:8080/user/get_friends/$myUserId"))
       val getFriendListFutureResponse = Await.result(getFriendListFuture, 5 second)
       val friends = getFriendListFutureResponse.entity.asString.parseJson.convertTo[List[UserNode]]
       val encryptedAesKeys: ListBuffer[EncryptedSecretKey] = new ListBuffer[EncryptedSecretKey]()
-
       val plainTextPostMessage = myUserName + " posting a message " + " at " + now
+      println("Iamposting - " + plainTextPostMessage)
 
       keyAes = keyGeneratorAes.generateKey()
+      cipherRsa.init(Cipher.ENCRYPT_MODE, keyPair.getPublic)
+      val encryptedAesKeyAsString = new String(Base64.getEncoder.encode(cipherRsa.doFinal(keyAes.getEncoded)))
+
+      val encryptedAesKey = EncryptedSecretKey(
+        to = "self",
+        encrypted_secret_key = encryptedAesKeyAsString
+      )
+      encryptedAesKeys += encryptedAesKey
+
       cipherAes.init(Cipher.ENCRYPT_MODE, keyAes)
       val encryptedPostMessageAsString = new String(Base64.getEncoder.encode(cipherAes.doFinal(plainTextPostMessage.getBytes)))
 
@@ -174,7 +237,7 @@ class FbUser extends Actor with ActorLogging {
         val encryptedAesKeyAsString = new String(Base64.getEncoder.encode(cipherRsa.doFinal(keyAes.getEncoded)))
 
         val encryptedPrivateKey = EncryptedSecretKey(
-        to = friends(i).first_name,
+          to = friends(i).first_name,
           encrypted_secret_key = encryptedAesKeyAsString
         )
         encryptedAesKeys += encryptedPrivateKey
@@ -200,12 +263,13 @@ class FbUser extends Actor with ActorLogging {
       val future: Future[HttpResponse] = postPipeline(Post("http://127.0.0.1:8080/user/post", entity))
       future onComplete {
         case Success(response) =>
-          println(response.entity.asString)
+          println("Ihaveposted" + response.entity.asString)
 
         case Failure(error) =>
           println("Some error has occurred: " + error.getMessage)
       }
 
+      self ! "DoneCreatingPost"
 
     case "SendFriendRequests" =>
       for (i <- myUserName + 5 until registeredUsersList.length by 5) {
