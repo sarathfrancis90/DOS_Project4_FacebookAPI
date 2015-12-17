@@ -52,7 +52,6 @@ class FbServer extends Actor with ActorLogging {
     case CreateFbNodeReq(nodeType, node) =>
       nodeType match {
         case "user" =>
-          statsServerRef ! "CreateFbNodeReqUser"
           val userNode = node.asInstanceOf[UserNode]
           if (userNode.id.isEmpty)
             userNode.id = getShaOf(userNode.first_name)
@@ -344,6 +343,7 @@ class FbServer extends Actor with ActorLogging {
       getRequestor(sender) ! RemoveUserLikedPageRsp(result)
 
     case AddFriendReq(userId, friendName) =>
+      statsServerRef ! "AddFriendReq"
       val addFriendReqToFbWorker = AddFriendReqToFbWorker(
         userId,
         friendName,
@@ -354,21 +354,27 @@ class FbServer extends Actor with ActorLogging {
       createFbWorkerForUserActivities(sender) ! addFriendReqToFbWorker
 
     case AddFriendRspToFbServer(result) =>
+      statsServerRef ! "AddFriendRsp"
       getRequestor(sender) ! AddFriendRsp(result)
 
     case GetPendingInFriendsReq(userId) =>
+      statsServerRef ! "GetPendingInFriendsReq"
       createFbWorkerForUserActivities(sender) ! GetPendingInFriendsReqToFbWorker(usersInFriends.get(userId).get)
 
     case GetPendingInFriendsRspToFbServer(inFriendName) =>
+      statsServerRef ! "GetPendingInFriendsRsp"
       getRequestor(sender) ! GetPendingInFriendsRsp(inFriendName)
 
     case GetFriendsReq(userId) =>
+      statsServerRef ! "GetFriendsReq"
       createFbWorkerForUserActivities(sender) ! GetFriendsReqToFbWorker(usersFriends.get(userId).get)
 
     case GetFriendsRspToFbServer(friends) =>
+      statsServerRef ! "GetFriendsRsp"
       getRequestor(sender) ! GetFriendsRsp(friends)
 
     case CreateUserReq(user) =>
+      statsServerRef ! "CreateFbNodeReqUser"
       createFbWorkerForUserActivities(sender) ! CreateUserReqToFbWorker(user)
 
     case CreateUserRspToFbServer(result, id) =>

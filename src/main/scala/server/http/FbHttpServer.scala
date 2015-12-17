@@ -66,8 +66,8 @@ object FbJsonProtocol extends DefaultJsonProtocol {
     }
   }
 
-  implicit val encryptedPrivateKeyFormat = jsonFormat2(EncryptedPrivateKey)
-  implicit val postNodeV2Format = jsonFormat9(PostNodeV2)
+  implicit val encryptedPrivateKeyFormat = jsonFormat2(EncryptedSecretKey)
+  implicit val postNodeV2Format = jsonFormat8(PostNodeV2)
 }
 
 class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with SprayJsonSupport {

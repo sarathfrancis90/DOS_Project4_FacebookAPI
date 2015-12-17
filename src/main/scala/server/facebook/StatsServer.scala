@@ -1,13 +1,13 @@
 package server.facebook
 
 import java.util.Calendar
-import scala.collection.immutable._
 
 import akka.actor.{Actor, ActorLogging}
 
 import scala.concurrent.duration.Duration
 
 class StatsServer extends Actor with ActorLogging {
+
   import context._
 
   var statsCreateFbNodeReqUser = 0
@@ -40,27 +40,36 @@ class StatsServer extends Actor with ActorLogging {
   var statsCreatePagePhotoRsp = 0
   var statsRemoveUserLikedPageReq = 0
   var statsRemoveUserLikedPageRsp = 0
+  var statsAddFriendReq = 0
+  var statsAddFriendRsp = 0
+  var statsGetPendingInFriendsReq = 0
+  var statsGetPendingInFriendsRsp = 0
+  var statsGetFriendsReq = 0
+  var statsGetFriendsRsp = 0
 
   def printStats() = {
     val now = Calendar.getInstance().getTime.toString
     print("\033[H\033[2J")
     println("--- Stats at " + now + " ---")
-    println("Create user requests - "+statsCreateFbNodeReqUser.toString+" in the last 5 seconds ("+statsCreateFbNodeReqUser.toDouble/5+"/second)")
-    println("Create page requests - "+statsCreateFbNodeReqPage.toString+" in the last 5 seconds ("+statsCreateFbNodeReqPage.toDouble/5+"/second)")
-    println("Create user post requests - "+statsCreateUserPostReq.toString+" in the last 5 seconds ("+statsCreateUserPostReq.toDouble/5+"/second)")
-    println("Get user posts requests - "+statsGetUserFeedReq.toString+" in the last 5 seconds ("+statsGetUserFeedReq.toDouble/5+"/second)")
-    println("Create user photo requests - "+statsCreateUserPhotoReq.toString+" in the last 5 seconds ("+statsCreateUserPhotoReq.toDouble/5+"/second)")
-    println("Get user photos requests - "+statsGetUserPhotosReq.toString+" in the last 5 seconds ("+statsGetUserPhotosReq.toDouble/5+"/second)")
-    println("Get user albums requests - "+statsGetUserAlbumsReq.toString+" in the last 5 seconds ("+statsGetUserAlbumsReq.toDouble/5+"/second)")
-    println("Create user album requests - "+statsCreateUserAlbumReq.toString+" in the last 5 seconds ("+statsCreateUserAlbumReq.toDouble/5+"/second)")
-    println("Get album photos requests - "+statsGetAlbumPhotosReq.toString+" in the last 5 seconds ("+statsGetAlbumPhotosReq.toDouble/5+"/second)")
-    println("User like requests - "+statsAddUserLikedPageReq.toString+" in the last 5 seconds ("+statsAddUserLikedPageReq.toDouble/5+"/second)")
-    println("Get likes (user) requests - "+statsGetUserLikedPagesReq.toString+" in the last 5 seconds ("+statsGetUserLikedPagesReq.toDouble/5+"/second)")
-    println("Get likes (page) requests - "+statsGetPageLikedUsersReq.toString+" in the last 5 seconds ("+statsGetPageLikedUsersReq.toDouble/5+"/second)")
-    println("Create page post requests - "+statsCreatePagePostReq.toString+" in the last 5 seconds ("+statsCreatePagePostReq.toDouble/5+"/second)")
-    println("Get user timeline requests - "+statsGetUserTimelineReq.toString+" in the last 5 seconds ("+statsGetUserTimelineReq.toDouble/5+"/second)")
-    println("Create page photo requests - "+statsCreatePagePhotoReq.toString+" in the last 5 seconds ("+statsCreatePagePhotoReq.toDouble/5+"/second)")
-    println("User un-like requests - "+statsRemoveUserLikedPageReq.toString+" in the last 5 seconds ("+statsRemoveUserLikedPageReq.toDouble/5+"/second)")
+    println("Create user requests - " + statsCreateFbNodeReqUser.toString + " in the last 5 seconds (" + statsCreateFbNodeReqUser.toDouble / 5 + "/second)")
+    println("Create page requests - " + statsCreateFbNodeReqPage.toString + " in the last 5 seconds (" + statsCreateFbNodeReqPage.toDouble / 5 + "/second)")
+    println("Create user post requests - " + statsCreateUserPostReq.toString + " in the last 5 seconds (" + statsCreateUserPostReq.toDouble / 5 + "/second)")
+    println("Get user posts requests - " + statsGetUserFeedReq.toString + " in the last 5 seconds (" + statsGetUserFeedReq.toDouble / 5 + "/second)")
+    println("Create user photo requests - " + statsCreateUserPhotoReq.toString + " in the last 5 seconds (" + statsCreateUserPhotoReq.toDouble / 5 + "/second)")
+    println("Get user photos requests - " + statsGetUserPhotosReq.toString + " in the last 5 seconds (" + statsGetUserPhotosReq.toDouble / 5 + "/second)")
+    println("Get user albums requests - " + statsGetUserAlbumsReq.toString + " in the last 5 seconds (" + statsGetUserAlbumsReq.toDouble / 5 + "/second)")
+    println("Create user album requests - " + statsCreateUserAlbumReq.toString + " in the last 5 seconds (" + statsCreateUserAlbumReq.toDouble / 5 + "/second)")
+    println("Get album photos requests - " + statsGetAlbumPhotosReq.toString + " in the last 5 seconds (" + statsGetAlbumPhotosReq.toDouble / 5 + "/second)")
+    println("User like requests - " + statsAddUserLikedPageReq.toString + " in the last 5 seconds (" + statsAddUserLikedPageReq.toDouble / 5 + "/second)")
+    println("Get likes (user) requests - " + statsGetUserLikedPagesReq.toString + " in the last 5 seconds (" + statsGetUserLikedPagesReq.toDouble / 5 + "/second)")
+    println("Get likes (page) requests - " + statsGetPageLikedUsersReq.toString + " in the last 5 seconds (" + statsGetPageLikedUsersReq.toDouble / 5 + "/second)")
+    println("Create page post requests - " + statsCreatePagePostReq.toString + " in the last 5 seconds (" + statsCreatePagePostReq.toDouble / 5 + "/second)")
+    println("Get user timeline requests - " + statsGetUserTimelineReq.toString + " in the last 5 seconds (" + statsGetUserTimelineReq.toDouble / 5 + "/second)")
+    println("Create page photo requests - " + statsCreatePagePhotoReq.toString + " in the last 5 seconds (" + statsCreatePagePhotoReq.toDouble / 5 + "/second)")
+    println("User un-like requests - " + statsRemoveUserLikedPageReq.toString + " in the last 5 seconds (" + statsRemoveUserLikedPageReq.toDouble / 5 + "/second)")
+    println("Add friend requests - " + statsAddFriendReq.toString + " in the last 5 seconds (" + statsAddFriendReq.toDouble / 5 + "/second)")
+    println("Get incoming friend requests - " + statsGetPendingInFriendsReq.toString + " in the last 5 seconds (" + statsGetPendingInFriendsReq.toDouble / 5 + "/second)")
+    println("Get friends requests - " + statsGetFriendsReq.toString + " in the last 5 seconds (" + statsGetFriendsReq.toDouble / 5 + "/second)")
     println("")
     println("")
   }
@@ -96,6 +105,12 @@ class StatsServer extends Actor with ActorLogging {
     statsCreatePagePhotoRsp = 0
     statsRemoveUserLikedPageReq = 0
     statsRemoveUserLikedPageRsp = 0
+    statsAddFriendReq = 0
+    statsAddFriendRsp = 0
+    statsGetPendingInFriendsReq = 0
+    statsGetPendingInFriendsRsp = 0
+    statsGetFriendsReq = 0
+    statsGetFriendsRsp = 0
   }
 
   def receive = {
@@ -197,8 +212,25 @@ class StatsServer extends Actor with ActorLogging {
     case "RemoveUserLikedPageRsp" =>
       statsRemoveUserLikedPageRsp += 1
 
+    case "AddFriendReq" =>
+      statsAddFriendReq += 1
+
+    case "AddFriendRsp" =>
+      statsAddFriendRsp += 1
+
+    case "GetPendingInFriendsReq" =>
+      statsGetPendingInFriendsReq += 1
+
+    case "GetPendingInFriendsRsp" =>
+      statsGetPendingInFriendsRsp += 1
+
+    case "GetFriendsReq" =>
+      statsGetFriendsReq += 1
+
+    case "GetFriendsRsp" =>
+      statsGetFriendsRsp += 1
+
     case _ =>
       println("Unknown stats")
-
   }
 }
