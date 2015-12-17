@@ -110,9 +110,13 @@ case class GetUserFeedReq(userId: String, typeOfPosts: String, startFrom: String
 
 case class GetUserFeedRsp(posts: List[PostNode])
 
-case class CreateUserPostReq(userId: String, post: PostNodeV2)
+case class CreateUserPostReq(userId: String, post: PostNode)
 
 case class CreateUserPostRsp(postId: String)
+
+case class CreateUserPostReqV2(userId: String, postV2: PostNodeV2)
+
+case class CreateUserPostRspV2(postId: String)
 
 case class GetAlbumPhotosReq(userId: String, albumId: String, startFrom: String, limit: Int)
 

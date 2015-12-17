@@ -32,6 +32,10 @@ object FbJsonProtocol extends DefaultJsonProtocol {
   implicit val createPagePhotoRspFormat = jsonFormat1(CreatePagePhotoRsp)
   implicit val createUserPostReqFormat = jsonFormat2(CreateUserPostReq)
   implicit val createUserPostRspFormat = jsonFormat1(CreateUserPostRsp)
+  implicit val encryptedSecretKeyFormat = jsonFormat2(EncryptedSecretKey)
+  implicit val postNodeV2Format = jsonFormat8(PostNodeV2)
+  implicit val createUserPostReqV2Format = jsonFormat2(CreateUserPostReqV2)
+  implicit val createUserPostRspV2Format = jsonFormat1(CreateUserPostRspV2)
   implicit val createUserPhotoReqFormat = jsonFormat2(CreateUserPhotoReq)
   implicit val createUserPhotoRspFormat = jsonFormat1(CreateUserPhotoRsp)
   implicit val createUserAlbumReqFormat = jsonFormat2(CreateUserAlbumReq)
@@ -65,9 +69,6 @@ object FbJsonProtocol extends DefaultJsonProtocol {
       }
     }
   }
-
-  implicit val encryptedPrivateKeyFormat = jsonFormat2(EncryptedSecretKey)
-  implicit val postNodeV2Format = jsonFormat8(PostNodeV2)
 }
 
 class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with SprayJsonSupport {
@@ -140,6 +141,15 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
         case result: CreateUserPostRsp =>
           requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, result.toJson.toString))
       }
+
+    case HttpRequest(POST, Uri.Path("/user/postv2"), _, entity, _) =>
+//      val requestor = sender
+//      val createUserPostReq = entity.asString.parseJson.convertTo[CreateUserPostReq]
+//      val future: Future[CreateUserPostRsp] = (fbServer ? createUserPostReq).mapTo[CreateUserPostRsp]
+//      future.onSuccess {
+//        case result: CreateUserPostRsp =>
+//          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, result.toJson.toString))
+//      }
 
     case HttpRequest(POST, Uri.Path("/user/photo"), _, entity, _) =>
       val requestor = sender

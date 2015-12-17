@@ -42,7 +42,7 @@ class Master extends Actor with ActorLogging {
   val totalPagesCount = 100
   val percentageOfUsersWhoClickLike: Int = 64
   val averageNumberOfPagesLikedByAUser: Int = 40
-  val percentageofActiveUsers: Double = 58
+  val percentageOfActiveUsers: Double = 58
   var myRegisteredUsers: ListBuffer[(String, String, ActorRef)] = new ListBuffer[(String, String, ActorRef)]()
   var myRegisteredPages: ListBuffer[(String, String, ActorRef)] = new ListBuffer[(String, String, ActorRef)]()
 
@@ -71,12 +71,7 @@ class Master extends Actor with ActorLogging {
     case DoneCreatingPage(pageName, pageId) =>
       val registeredPage = (pageName, pageId, sender)
       myRegisteredPages += registeredPage
-      if (myRegisteredPages.length == totalPagesCount) {
-        log.info("Done creating " + myRegisteredPages.length.toString + " pages")
-        //        for (i <- 1 until fbPages.length) {
-        //          fbPages(i) ! RegisteredPagesList(myRegisteredPages.toList)
-        //        }
-      }
+      if (myRegisteredPages.length == totalPagesCount) log.info("Done creating " + myRegisteredPages.length.toString + " pages")
     case "CreatePages" =>
       for (i <- 1 until totalPagesCount) {
         fbPages += ActorSystem("dos-project-4").actorOf(Props(new FbPage), name = i.toString)
@@ -114,8 +109,7 @@ class FbUser extends Actor with ActorLogging {
   val getPipeline: HttpRequest => Future[HttpResponse] = sendReceive
   val postPipeline: HttpRequest => Future[HttpResponse] = sendReceive
 
-  var myFriendList: List[(String)] = _
-
+  var myFriendList: ListBuffer[(String)] = _
 
   def receive = {
 
@@ -164,7 +158,7 @@ class FbUser extends Actor with ActorLogging {
       val getFriendListFuture: Future[HttpResponse] = getPipeline(Get(s"http://127.0.0.1:8080/user/get_friends/$myUserId"))
       val getFriendListFutureResponse = Await.result(getFriendListFuture, 5 second)
       val friends = getFriendListFutureResponse.entity.asString.parseJson.convertTo[List[UserNode]]
-      val encryptedAesKeys: ListBuffer[EncryptedPrivateKey] = new ListBuffer[EncryptedPrivateKey]()
+      val encryptedAesKeys: ListBuffer[EncryptedSecretKey] = new ListBuffer[EncryptedSecretKey]()
 
       val plainTextPostMessage = myUserName + " posting a message " + " at " + now
 
@@ -172,11 +166,6 @@ class FbUser extends Actor with ActorLogging {
       cipherAes.init(Cipher.ENCRYPT_MODE, keyAes)
       val encryptedPostMessageAsString = new String(Base64.getEncoder.encode(cipherAes.doFinal(plainTextPostMessage.getBytes)))
 
-      //      println("***Friends for the user: " + myUserName)
-      //      friends.foreach(friend => {
-      //        myFriendList += friend.first_name
-      //        //        println (friend.first_name)
-      //      })
       for (i <- friends.indices by 5) {
         val publicKeyOfFriend: PublicKey =
           KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(
@@ -184,9 +173,9 @@ class FbUser extends Actor with ActorLogging {
         cipherRsa.init(Cipher.ENCRYPT_MODE, publicKeyOfFriend)
         val encryptedAesKeyAsString = new String(Base64.getEncoder.encode(cipherRsa.doFinal(keyAes.getEncoded)))
 
-        val encryptedPrivateKey = EncryptedPrivateKey(
+        val encryptedPrivateKey = EncryptedSecretKey(
         to = friends(i).first_name,
-          encrypted_private_key = encryptedAesKeyAsString
+          encrypted_secret_key = encryptedAesKeyAsString
         )
         encryptedAesKeys += encryptedPrivateKey
       }
@@ -196,23 +185,21 @@ class FbUser extends Actor with ActorLogging {
         created_time = now,
         description = "",
         from = myUserId,
-        encrypted_message = "encrypted_message",
-        encrypted_private_keys = encryptedAesKeys.toList,
+        encrypted_message = encryptedPostMessageAsString,
+        encrypted_secret_keys = encryptedAesKeys.toList,
         to = List.empty,
         updated_time = now
       )
-      val createActiveUserPostReq = CreateUserPostReq(
+
+      val createUserPostReqV2 = CreateUserPostReqV2(
         userId = myUserId,
-        post = postNodeV2
+        postV2 = postNodeV2
       )
-      val entity = HttpEntity(contentType = ContentType(MediaTypes.`application/json`, HttpCharsets.`UTF-8`), createActiveUserPostReq.toJson.toString)
+      val entity = HttpEntity(contentType = ContentType(MediaTypes.`application/json`, HttpCharsets.`UTF-8`), createUserPostReqV2.toJson.toString)
 
-      val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
-
-      val future: Future[HttpResponse] = pipeline(Post("http://127.0.0.1:8080/user/post", entity))
+      val future: Future[HttpResponse] = postPipeline(Post("http://127.0.0.1:8080/user/postv2", entity))
       future onComplete {
         case Success(response) =>
-        //            println(response.entity.asString.parseJson.convertTo[AddFriendRsp].result)
 
         case Failure(error) =>
           println("Some error has occurred: " + error.getMessage)
