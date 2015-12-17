@@ -194,7 +194,7 @@ case class GetFriendDetailsReqToFbWorker(ownFriends: ListBuffer[String], friendN
 
 case class GetFriendDetailsRspToFbServer(friendNode: Option[UserNode])
 
-case class GetFriendDetailsRsp(friendNode: Option[UserNode])
+case class GetFriendDetailsRsp(friendNode: UserNode)
 
 case class Update_InFriends_Remove(userId: String, friendId: String)
 

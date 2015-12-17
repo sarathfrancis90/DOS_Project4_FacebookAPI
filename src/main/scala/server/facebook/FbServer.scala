@@ -386,7 +386,7 @@ class FbServer extends Actor with ActorLogging {
       createFbWorkerForUserActivities(sender) ! getFriendDetailsReqToFbWorker
 
     case GetFriendDetailsRspToFbServer(friendNode) =>
-      getRequestor(sender) ! GetFriendDetailsRsp(friendNode)
+      getRequestor(sender) ! GetFriendDetailsRsp(friendNode.getOrElse(UserNode(id = "", about = "", birthday = "", email = "", first_name = "", public_key = "", encrypted_special_key = "")))
 
     case AddSpecialKeyToFriendReq(userId, friendName, encrypted_special_key) =>
       val specialKey = (userId, encrypted_special_key)
