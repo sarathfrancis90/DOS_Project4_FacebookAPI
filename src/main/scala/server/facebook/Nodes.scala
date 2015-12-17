@@ -20,17 +20,9 @@ case class PostNode(var id: String,
                     var description: String,
                     var from: String,
                     var message: String,
+                    var encrypted_secret_keys: List[EncryptedSecretKey],
                     var to: List[String],
                     var updated_time: String) extends Node
-
-case class PostNodeV2(var id: String,
-                      var created_time: String,
-                      var description: String,
-                      var from: String,
-                      var encrypted_message: String,
-                      var encrypted_secret_keys: List[EncryptedSecretKey],
-                      var to: List[String],
-                      var updated_time: String) extends Node
 
 case class FriendListNode(var id: String,
                           var name: String,

@@ -21,22 +21,31 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
       myFbServerRef = sender
 
     case CreateUserPostReqToFbWorker(post, ownPosts) =>
-      post.to = parseTextAndFindUsernames(post.message)
+      val to: ListBuffer[String] = new ListBuffer[String]()
+      post.encrypted_secret_keys.foreach(encrypted_secret_key => {
+        if (!encrypted_secret_key.to.equals("self"))
+          to += encrypted_secret_key.to
+      })
+
+      post.to = to.toList
 
       val future: Future[CreateFbNodeRsp] = (myFbServerRef ? CreateFbNodeReq("post", post)).mapTo[CreateFbNodeRsp]
       val createFbNodeRsp = Await.result(future, someTimeout.duration)
       if (createFbNodeRsp.result) {
         post.id = createFbNodeRsp.id
+
+        ownPosts.insert(0, post.id)
+
+        post.to.foreach(taggedUser => {
+          // please don't tag yourself
+          myFbServerRef ! UpdateUserTaggedPostNtf(getShaOf(taggedUser), post.id)
+        })
+
+        myFbServerRef ! CreateUserPostRspToFbServer(post.id)
+
       }
-
-      ownPosts.insert(0, post.id)
-
-      post.to.foreach(taggedUser => {
-        // please don't tag yourself
-        myFbServerRef ! UpdateUserTaggedPostNtf(getShaOf(taggedUser), post.id)
-      })
-
-      myFbServerRef ! CreateUserPostRspToFbServer(post.id)
+      else
+        myFbServerRef ! CreateUserPostRspToFbServer("")
 
     case GetUserPostsReqToFbWorker(startFrom, limit, postIds: ListBuffer[String]) =>
       val posts: ListBuffer[PostNode] = new ListBuffer[PostNode]()

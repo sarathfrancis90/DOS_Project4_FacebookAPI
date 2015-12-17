@@ -180,26 +180,27 @@ class FbUser extends Actor with ActorLogging {
         encryptedAesKeys += encryptedPrivateKey
       }
 
-      val postNodeV2 = PostNodeV2(
+      val postNodeV2 = PostNode(
         id = "",
         created_time = now,
         description = "",
         from = myUserId,
-        encrypted_message = encryptedPostMessageAsString,
+        message = encryptedPostMessageAsString,
         encrypted_secret_keys = encryptedAesKeys.toList,
         to = List.empty,
         updated_time = now
       )
 
-      val createUserPostReqV2 = CreateUserPostReqV2(
+      val createUserPostReq = CreateUserPostReq(
         userId = myUserId,
-        postV2 = postNodeV2
+        post = postNodeV2
       )
-      val entity = HttpEntity(contentType = ContentType(MediaTypes.`application/json`, HttpCharsets.`UTF-8`), createUserPostReqV2.toJson.toString)
+      val entity = HttpEntity(contentType = ContentType(MediaTypes.`application/json`, HttpCharsets.`UTF-8`), createUserPostReq.toJson.toString)
 
-      val future: Future[HttpResponse] = postPipeline(Post("http://127.0.0.1:8080/user/postv2", entity))
+      val future: Future[HttpResponse] = postPipeline(Post("http://127.0.0.1:8080/user/post", entity))
       future onComplete {
         case Success(response) =>
+          println(response.entity.asString)
 
         case Failure(error) =>
           println("Some error has occurred: " + error.getMessage)
