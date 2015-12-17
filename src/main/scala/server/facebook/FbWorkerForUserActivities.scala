@@ -56,12 +56,20 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
       else
         myFbServerRef ! CreateUserPostRspToFbServer("")
 
-    case GetUserPostsReqToFbWorker(startFrom, limit, postIds: ListBuffer[String]) =>
+    case GetUserPostsReqToFbWorker(startFrom, limit, postIds: ListBuffer[String], userId) =>
+      val futureGetFbNodeRsp: Future[GetFbNodeRsp] = (myFbServerRef ? GetFbNodeReq("user", userId)).mapTo[GetFbNodeRsp]
+      val getFbNodeRsp = Await.result(futureGetFbNodeRsp, someTimeout.duration)
+      val first_name = getFbNodeRsp.node.asInstanceOf[UserNode].first_name
+
       val posts: ListBuffer[PostNode] = new ListBuffer[PostNode]()
       postIds.foreach(postId => {
         val future: Future[GetFbNodeRsp] = (myFbServerRef ? GetFbNodeReq("post", postId)).mapTo[GetFbNodeRsp]
         val getFbNodeRsp = Await.result(future, someTimeout.duration)
-        posts += getFbNodeRsp.node.asInstanceOf[PostNode]
+        val post = getFbNodeRsp.node.asInstanceOf[PostNode].copy()
+        post.encrypted_secret_keys = post.encrypted_secret_keys.filter(x => {
+          x.to == "self" || x.to == first_name
+        })
+        posts += post
       })
 
       myFbServerRef ! GetUserPostsRspToFbServer(posts.toList)
@@ -275,7 +283,9 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
         val future: Future[GetFbNodeRsp] = (myFbServerRef ? GetFbNodeReq("user", ownFriend)).mapTo[GetFbNodeRsp]
         val getFbNodeRsp = Await.result(future, someTimeout.duration)
         val friend = getFbNodeRsp.node.asInstanceOf[UserNode].copy()
-        friend.encrypted_special_key = friendsSpecialKeys.find(x => {x==friend.id}).getOrElse(("", ""))._2
+        friend.encrypted_special_key = friendsSpecialKeys.find(x => {
+          x == friend.id
+        }).getOrElse(("", ""))._2
         friends += friend
       })
 
@@ -305,7 +315,9 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
         val future: Future[GetFbNodeRsp] = (myFbServerRef ? GetFbNodeReq("user", friendId)).mapTo[GetFbNodeRsp]
         val getFbNodeRsp = Await.result(future, someTimeout.duration)
         val friend = getFbNodeRsp.node.asInstanceOf[UserNode].copy()
-        friend.encrypted_special_key = friendsSpecialKeys.find(x => {x==friend.id}).getOrElse(("", ""))._2
+        friend.encrypted_special_key = friendsSpecialKeys.find(x => {
+          x == friend.id
+        }).getOrElse(("", ""))._2
         friendNode = Some(friend)
       }
       myFbServerRef ! GetFriendDetailsRspToFbServer(friendNode)

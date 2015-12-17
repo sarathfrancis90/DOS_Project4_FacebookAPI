@@ -226,9 +226,9 @@ class FbServer extends Actor with ActorLogging {
       statsServerRef ! "GetUserFeedReq"
       typeOfPosts match {
         case "own" =>
-          createFbWorkerForUserActivities(sender) ! GetUserPostsReqToFbWorker(startFrom, limit = 10, usersOwnPosts.get(userId).get)
+          createFbWorkerForUserActivities(sender) ! GetUserPostsReqToFbWorker(startFrom, limit = 10, usersOwnPosts.get(userId).get, userId)
         case "tagged" =>
-          createFbWorkerForUserActivities(sender) ! GetUserPostsReqToFbWorker(startFrom, limit = 10, usersTaggedPosts.get(userId).get)
+          createFbWorkerForUserActivities(sender) ! GetUserPostsReqToFbWorker(startFrom, limit = 10, usersTaggedPosts.get(userId).get, userId)
       }
 
     case GetUserPostsRspToFbServer(posts) =>

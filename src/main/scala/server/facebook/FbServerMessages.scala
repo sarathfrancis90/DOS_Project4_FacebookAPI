@@ -16,7 +16,7 @@ case class CreateUserPostReqToFbWorker(post: PostNode, ownPosts: ListBuffer[Stri
 
 case class CreateUserPostRspToFbServer(postId: String)
 
-case class GetUserPostsReqToFbWorker(startFrom: String, limit: Int, postIds: ListBuffer[String])
+case class GetUserPostsReqToFbWorker(startFrom: String, limit: Int, postIds: ListBuffer[String], userId: String)
 
 case class GetUserPostsRspToFbServer(posts: List[PostNode])
 
