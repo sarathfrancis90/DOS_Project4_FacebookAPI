@@ -36,7 +36,7 @@ The REST API is implemented using the spray–can library. The list of end point
 | _POST_ | /user/album | Creates a new album for the requesting user |
 | _POST_ | /user/unlike\_page | For a user to un-like a page |
 | _GET_ | /user/timeline | View timeline for users |
-| _GET_ | /user/ownp\_hotos | View photos posted by user |
+| _GET_ | /user/own\_photos | View photos posted by user |
 | _GET_ | /user/tagged\_photos | View photos the user is tagged in |
 | _GET_ | /user/own\_posts | View posts made by user |
 | _GET_ | /user/tagged\_posts | View posts the user is tagged in |
