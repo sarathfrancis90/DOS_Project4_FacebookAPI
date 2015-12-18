@@ -3,7 +3,7 @@ package client
 import java.security._
 import java.security.spec.X509EncodedKeySpec
 import java.util.{Base64, Calendar}
-import javax.crypto.spec.SecretKeySpec
+import javax.crypto.spec.{GCMParameterSpec, SecretKeySpec}
 import javax.crypto.{Cipher, KeyGenerator, SecretKey}
 
 import akka.actor.{ActorSystem, _}
@@ -262,23 +262,18 @@ class FbUser extends Actor with ActorLogging {
           makeAPostToSelectFriends
           postType = "to_all_friends"
 
-          makeAPostToAllFriends
-
         case "to_all_friends" =>
           makeAPostToAllFriends
           postType = "to_select_friends"
 
       }
 
-      //      self ! "CreateUserPost"
-      self ! "DoneCreatingPost"
+      context.system.scheduler.scheduleOnce(Duration(20, "millis"), self, "CreateUserPost")
+      context.system.scheduler.scheduleOnce(Duration(1000, "millis"), self, "DoneCreatingPost")
 
     case "DoneCreatingPost" =>
       self ! "ViewOwnPosts"
       self ! "ViewTaggedPosts"
-
-    case "DoneViewingTaggedPosts" =>
-      Thread.sleep(10000)
 
     case "ViewTaggedPosts" =>
       val viewTaggedPostFuture: Future[HttpResponse] = getPipeline(Get(s"http://127.0.0.1:8080/user/tagged_posts/$myUserId"))
@@ -297,10 +292,10 @@ class FbUser extends Actor with ActorLogging {
 
             cipherRsa.init(Cipher.DECRYPT_MODE, myRsaKeyPair.getPrivate)
             val aesKeyForPost: SecretKey = new SecretKeySpec(cipherRsa.doFinal(Base64.getDecoder.decode(postOwner.encrypted_special_key.getBytes)), "AES")
-            cipherAes.init(Cipher.DECRYPT_MODE, aesKeyForPost)
+            cipherAesWithGcm.init(Cipher.DECRYPT_MODE, aesKeyForPost, new GCMParameterSpec(128, Base64.getDecoder.decode(taggedPost.message_iv.getBytes)))
 
-            val post = new String(cipherAes.doFinal(Base64.getDecoder.decode(taggedPost.message.getBytes)))
-            println(post)
+            val post = new String(cipherAesWithGcm.doFinal(Base64.getDecoder.decode(taggedPost.message.getBytes)))
+            println("Tagged post to all friends - " + post)
 
           }
           else {
@@ -312,7 +307,7 @@ class FbUser extends Actor with ActorLogging {
             cipherAes.init(Cipher.DECRYPT_MODE, aesKeyForThisPost)
 
             val post = new String(cipherAes.doFinal(Base64.getDecoder.decode(taggedPost.message.getBytes)))
-            println(post)
+            println("Tagged post to select friends - " + post)
 
           }
         }
@@ -320,7 +315,9 @@ class FbUser extends Actor with ActorLogging {
           println(taggedPost.message)
         }
       })
-      self ! "DoneViewingTaggedPosts"
+
+      println("")
+      context.system.scheduler.scheduleOnce(Duration(1000, "millis"), self, "ViewTaggedPosts")
 
     case "ViewOwnPosts" =>
       val viewOwnPostFuture: Future[HttpResponse] = getPipeline(Get(s"http://127.0.0.1:8080/user/own_posts/$myUserId"))
@@ -332,9 +329,9 @@ class FbUser extends Actor with ActorLogging {
         if (ownPost.encrypted) {
           if (ownPost.to_all_friends) {
 
-            cipherAes.init(Cipher.DECRYPT_MODE, myAesKey)
-            val post = new String(cipherAes.doFinal(Base64.getDecoder.decode(ownPost.message.getBytes)))
-            println(post)
+            cipherAesWithGcm.init(Cipher.DECRYPT_MODE, myAesKey,new GCMParameterSpec(128, Base64.getDecoder.decode(ownPost.message_iv.getBytes)))
+            val post = new String(cipherAesWithGcm.doFinal(Base64.getDecoder.decode(ownPost.message.getBytes)))
+            println("Own post to all friends - " + post)
 
           }
           else {
@@ -346,13 +343,16 @@ class FbUser extends Actor with ActorLogging {
             cipherAes.init(Cipher.DECRYPT_MODE, aesKeyForThisPost)
 
             val post = new String(cipherAes.doFinal(Base64.getDecoder.decode(ownPost.message.getBytes)))
-            println(post)
+            println("Own post to select friends - " + post)
           }
         }
         else {
           println(ownPost.message)
         }
       })
+
+      println("")
+      context.system.scheduler.scheduleOnce(Duration(1000, "millis"), self, "ViewOwnPosts")
   }
 
   def now = {
@@ -398,13 +398,18 @@ class FbUser extends Actor with ActorLogging {
   }
 
   def makeAPostToAllFriends = {
-    val plainPostMessage = myUserName + " posting message#" + myPostCount.toString + "to all friends at " + now
-    cipherAes.init(Cipher.ENCRYPT_MODE, myAesKey)
-    val encryptedPostMessageAsString = new String(Base64.getEncoder.encode(cipherAes.doFinal(plainPostMessage.getBytes)))
+    val plainPostMessage = myUserName + " posting message#" + myPostCount.toString + " to all friends at " + now
+    cipherAesWithGcm.init(Cipher.ENCRYPT_MODE, myAesKey, secureRandom)
+    val encryptedPostMessageAsString = new String(Base64.getEncoder.encode(cipherAesWithGcm.doFinal(plainPostMessage.getBytes)))
 
     val createUserPostReq = CreateUserPostReq(
       userId = myUserId,
-      post = postTemplate.copy(from = myUserId, message = encryptedPostMessageAsString, encrypted = true, to_all_friends = true)
+      post = postTemplate.copy(
+        from = myUserId,
+        message = encryptedPostMessageAsString,
+        encrypted = true,
+        to_all_friends = true,
+        message_iv = new String(Base64.getEncoder.encode(cipherAesWithGcm.getIV)))
     )
 
     val entity = HttpEntity(contentType = ContentType(MediaTypes.`application/json`, HttpCharsets.`UTF-8`), createUserPostReq.toJson.toString)

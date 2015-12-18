@@ -270,9 +270,8 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
           val posts: ListBuffer[Node] = new ListBuffer[Node]()
           result.posts.foreach(post => {
             posts += post
-//            println("Sendingposttoclient - " + post.toString)
           })
-          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, posts.toList.toJson.toString))
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, posts.toList.take(25).toJson.toString))
       }
 
     case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/tagged_posts" =>
@@ -286,13 +285,11 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
       val future: Future[GetUserFeedRsp] = (fbServer ? getUserFeedReq).mapTo[GetUserFeedRsp]
       future.onSuccess {
         case result: GetUserFeedRsp =>
-//          println("***/user/tagged_posts")
           val posts: ListBuffer[Node] = new ListBuffer[Node]()
           result.posts.foreach(post => {
             posts += post
-//            println("Sendingtaggedposttoclient - " + post.toString)
           })
-          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, posts.toList.toJson.toString))
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, posts.toList.take(25).toJson.toString))
       }
 
     case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/get_albums" =>

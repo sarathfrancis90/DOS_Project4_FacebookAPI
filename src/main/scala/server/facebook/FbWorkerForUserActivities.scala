@@ -320,11 +320,6 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
       val friendId = getShaOf(friendName)
       var friendNode = None: Option[UserNode]
 
-//      println("\n\n**&&**^^ - saved keys")
-//      friendsSpecialKeys.foreach(x => {
-//        println(x)
-//      })
-//      println("looking for " + friendId + "\n\n")
 
       if (ownFriends.contains(friendId)) {
         val future: Future[GetFbNodeRsp] = (myFbServerRef ? GetFbNodeReq("user", friendId)).mapTo[GetFbNodeRsp]
@@ -334,8 +329,6 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
           x._1.equals(friend.id)
         }).getOrElse(("", ""))._2
         friendNode = Some(friend)
-
-        println("**&&**^^ - " + friendNode.get.encrypted_special_key)
       }
 
 
