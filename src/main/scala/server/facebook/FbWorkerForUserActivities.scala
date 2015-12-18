@@ -45,10 +45,19 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
 
         ownPosts.insert(0, post.id)
 
-        post.to.foreach(taggedUser => {
-          // please don't tag yourself
-          myFbServerRef ! UpdateUserTaggedPostNtf(getShaOf(taggedUser), post.id)
-        })
+        if (post.to_all_friends) {
+          post.to.foreach(taggedUserId => {
+            // please don't tag yourself
+            myFbServerRef ! UpdateUserTaggedPostNtf(taggedUserId, post.id)
+          })
+        }
+        else {
+          post.to.foreach(taggedUser => {
+            // please don't tag yourself
+            myFbServerRef ! UpdateUserTaggedPostNtf(getShaOf(taggedUser), post.id)
+          })
+        }
+
 
         myFbServerRef ! CreateUserPostRspToFbServer(post.id)
 
@@ -311,15 +320,25 @@ class FbWorkerForUserActivities extends Actor with ActorLogging {
       val friendId = getShaOf(friendName)
       var friendNode = None: Option[UserNode]
 
+//      println("\n\n**&&**^^ - saved keys")
+//      friendsSpecialKeys.foreach(x => {
+//        println(x)
+//      })
+//      println("looking for " + friendId + "\n\n")
+
       if (ownFriends.contains(friendId)) {
         val future: Future[GetFbNodeRsp] = (myFbServerRef ? GetFbNodeReq("user", friendId)).mapTo[GetFbNodeRsp]
         val getFbNodeRsp = Await.result(future, someTimeout.duration)
         val friend = getFbNodeRsp.node.asInstanceOf[UserNode].copy()
         friend.encrypted_special_key = friendsSpecialKeys.find(x => {
-          x == friend.id
+          x._1.equals(friend.id)
         }).getOrElse(("", ""))._2
         friendNode = Some(friend)
+
+        println("**&&**^^ - " + friendNode.get.encrypted_special_key)
       }
+
+
       myFbServerRef ! GetFriendDetailsRspToFbServer(friendNode)
 
     case PleaseKillYourself =>

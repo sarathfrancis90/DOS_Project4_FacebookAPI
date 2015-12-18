@@ -45,6 +45,9 @@ object FbJsonProtocol extends DefaultJsonProtocol {
   implicit val createUserRspFormat = jsonFormat2(CreateUserRsp)
   implicit val addSpecialKeyToFriendReqFormat = jsonFormat3(AddSpecialKeyToFriendReq)
   implicit val addSpecialKeyToFriendRspFormat = jsonFormat1(AddSpecialKeyToFriendRsp)
+  implicit val getFriendDetailsReqFormat = jsonFormat2(GetFriendDetailsReq)
+  implicit val getFriendDetailsRspFormat = jsonFormat1(GetFriendDetailsRsp)
+
 
   implicit object NodeFormat extends RootJsonFormat[Node] {
     def write(n: Node) = n match {
@@ -202,7 +205,7 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
           requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, eventsOnly.toList.take(10).toJson.toString))
       }
 
-    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/get_frienddetails" =>
+    case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/get_friend_details" =>
       val requestor = sender
       val urlSplit = path.split('/')
       val friendName = urlSplit.last
@@ -214,8 +217,7 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
       val future: Future[GetFriendDetailsRsp] = (fbServer ? getFriendDetailsReq).mapTo[GetFriendDetailsRsp]
       future.onSuccess {
         case result: GetFriendDetailsRsp =>
-            val friendDetails = result.friendNode
-          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`,friendDetails.toJson.toString))
+          requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, result.toJson.toString))
       }
 
     case HttpRequest(GET, Uri.Path(path), _, _, _) if path startsWith "/user/own_photos" =>
@@ -268,7 +270,7 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
           val posts: ListBuffer[Node] = new ListBuffer[Node]()
           result.posts.foreach(post => {
             posts += post
-            println("Sendingposttoclient - " + post.toString)
+//            println("Sendingposttoclient - " + post.toString)
           })
           requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, posts.toList.toJson.toString))
       }
@@ -284,9 +286,11 @@ class FbServerHttp extends Actor with ActorLogging with AdditionalFormats with S
       val future: Future[GetUserFeedRsp] = (fbServer ? getUserFeedReq).mapTo[GetUserFeedRsp]
       future.onSuccess {
         case result: GetUserFeedRsp =>
+//          println("***/user/tagged_posts")
           val posts: ListBuffer[Node] = new ListBuffer[Node]()
           result.posts.foreach(post => {
             posts += post
+//            println("Sendingtaggedposttoclient - " + post.toString)
           })
           requestor ! HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, posts.toList.toJson.toString))
       }
