@@ -165,7 +165,7 @@ class FbUser extends Actor with ActorLogging {
       context.system.scheduler.scheduleOnce(totalTimeDuration, self, "CreateUserPost")
 
     case "DoneCreatingPost" =>
-      //      self ! "ViewOwnPosts"
+      self ! "ViewOwnPosts"
       self ! "ViewTaggedPosts"
 
     case "DoneViewingTaggedPosts" =>
@@ -189,12 +189,12 @@ class FbUser extends Actor with ActorLogging {
           val getFriendDetailsReqFuture: Future[HttpResponse] = getPipeline(Get(s"http://127.0.0.1:8080/user/get_friend_details/$myUserId/$postOwner"))
           val getFriendDetailsFutureResponse = Await.result(getFriendDetailsReqFuture, 5 second)
           println("@#@#@# - " + getFriendDetailsFutureResponse.entity.asString.parseJson.prettyPrint)
-                    val postOwnerDetails: UserNode = getFriendDetailsFutureResponse.entity.asString.parseJson.convertTo[GetFriendDetailsRsp].friendNode
-                    val postOwnersAesKey : SecretKey = new SecretKeySpec(cipherRsa.doFinal(Base64.getDecoder.decode(postOwnerDetails.encrypted_special_key.getBytes)), "AES")
-                    cipherAes.init(Cipher.DECRYPT_MODE, postOwnersAesKey)
+          val postOwnerDetails: UserNode = getFriendDetailsFutureResponse.entity.asString.parseJson.convertTo[GetFriendDetailsRsp].friendNode
+          val postOwnersAesKey: SecretKey = new SecretKeySpec(cipherRsa.doFinal(Base64.getDecoder.decode(postOwnerDetails.encrypted_special_key.getBytes)), "AES")
+          cipherAes.init(Cipher.DECRYPT_MODE, postOwnersAesKey)
 
-                    val plainMessage = new String(cipherAes.doFinal(Base64.getDecoder.decode(taggedPost.message.getBytes)))
-                    println("Seeing post for me and everyone - " + plainMessage)
+          val plainMessage = new String(cipherAes.doFinal(Base64.getDecoder.decode(taggedPost.message.getBytes)))
+          println("Seeing post for me and everyone - " + plainMessage)
 
         }
         if (taggedPost.to_all_friends == false && taggedPost.encrypted == true) {
@@ -227,8 +227,6 @@ class FbUser extends Actor with ActorLogging {
       if (ownPosts.isEmpty)
         println("Seeingmypost - ")
 
-      //      cipherRsa.init(Cipher.DECRYPT_MODE, keyPair.getPrivate)
-
       ownPosts.foreach(ownPost => {
 
         if (ownPost.to_all_friends == true && ownPost.encrypted == true) {
@@ -240,6 +238,7 @@ class FbUser extends Actor with ActorLogging {
 
         if (ownPost.to_all_friends == false && ownPost.encrypted == true) {
           println("trying Seeing my post for some")
+          cipherRsa.init(Cipher.DECRYPT_MODE, keyPair.getPrivate)
           val secretKey = new SecretKeySpec(cipherRsa.doFinal(Base64.getDecoder.decode(ownPost.encrypted_secret_keys.find(x => {
             x.to == "self"
           }).get.encrypted_secret_key.getBytes)), "AES")
