@@ -1,7 +1,8 @@
 package server.facebook
 
-import java.security.MessageDigest
-import java.util.Calendar
+import java.security.spec.X509EncodedKeySpec
+import java.security.{Signature, KeyFactory, MessageDigest}
+import java.util.{Base64, Calendar}
 
 import akka.actor._
 
@@ -45,6 +46,8 @@ class FbServer extends Actor with ActorLogging {
 
   val system = ActorSystem("HttpServerTest")
   val statsServerRef = system.actorOf(Props(new StatsServer), "StatsServer")
+
+  val signatureInst = Signature.getInstance("SHA1withRSA")
 
   def receive = {
     case "Init" =>
@@ -215,8 +218,26 @@ class FbServer extends Actor with ActorLogging {
 
     case CreateUserPostReq(userId, post) =>
       statsServerRef ! "CreateUserPostReq"
-      post.from = userId
-      createFbWorkerForUserActivities(sender) ! CreateUserPostReqToFbWorker(post, usersOwnPosts.get(userId).get, usersFriends.get(userId).get)
+
+      //
+      val usersPublicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(Base64.getDecoder.decode(users.get(userId).get.asInstanceOf[UserNode].public_key.getBytes)))
+      signatureInst.initVerify(usersPublicKey)
+      signatureInst.update(post.message.getBytes)
+
+      try {
+        if (signatureInst.verify(Base64.getDecoder.decode(post.signature.getBytes))) {
+          println("signature verified")
+          post.from = userId
+          createFbWorkerForUserActivities(sender) ! CreateUserPostReqToFbWorker(post, usersOwnPosts.get(userId).get, usersFriends.get(userId).get)
+        }
+      }
+      catch {
+        case e: Throwable => println(e.getMessage)
+          sender ! CreateUserPostRsp("")
+      }
+      //
+
+
 
     case CreateUserPostRspToFbServer(postId) =>
       statsServerRef ! "CreateUserPostRsp"

@@ -27,7 +27,8 @@ case class PostNode(var id: String,
                     var updated_time: String,
                     var encrypted: Boolean,
                     var to_all_friends: Boolean,
-                    var message_iv: String) extends Node
+                    var message_iv: String,
+                    var signature: String) extends Node
 
 case class FriendListNode(var id: String,
                           var name: String,

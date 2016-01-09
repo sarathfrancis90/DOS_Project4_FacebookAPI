@@ -111,7 +111,7 @@ class FbUser extends Actor with ActorLogging {
   val cipherAes = Cipher.getInstance("AES")
   val cipherAesWithGcm = Cipher.getInstance("AES/GCM/NoPadding")
 
-  val signature = Signature.getInstance("SHA1withRSA")
+  val signatureInst = Signature.getInstance("SHA1withRSA")
 
   var mySender: ActorRef = _
   var myUserId: String = _
@@ -140,7 +140,8 @@ class FbUser extends Actor with ActorLogging {
     updated_time = "",
     encrypted = false,
     to_all_friends = false,
-    message_iv = ""
+    message_iv = "",
+    signature = ""
   )
 
   def receive = {
@@ -366,6 +367,12 @@ class FbUser extends Actor with ActorLogging {
     cipherAes.init(Cipher.ENCRYPT_MODE, keyAes)
     val encryptedPostMessageAsString = new String(Base64.getEncoder.encode(cipherAes.doFinal(plainPostMessage.getBytes)))
 
+    //
+    signatureInst.initSign(myRsaKeyPair.getPrivate)
+    signatureInst.update(encryptedPostMessageAsString.getBytes)
+    val realSignature = new String(Base64.getEncoder.encode(signatureInst.sign()))
+    //
+
     val encryptedSecretKeys: ListBuffer[EncryptedSecretKey] = new ListBuffer[EncryptedSecretKey]()
     cipherRsa.init(Cipher.ENCRYPT_MODE, myRsaKeyPair.getPublic)
     encryptedSecretKeys += EncryptedSecretKey(to = "self", encrypted_secret_key = new String(Base64.getEncoder.encode(cipherRsa.doFinal(keyAes.getEncoded))))
@@ -387,7 +394,8 @@ class FbUser extends Actor with ActorLogging {
         message = encryptedPostMessageAsString,
         encrypted_secret_keys = encryptedSecretKeys.toList,
         encrypted = true,
-        to_all_friends = false)
+        to_all_friends = false,
+        signature = realSignature)
     )
     val entity = HttpEntity(contentType = ContentType(MediaTypes.`application/json`, HttpCharsets.`UTF-8`), createUserPostReq.toJson.toString)
 
@@ -402,6 +410,10 @@ class FbUser extends Actor with ActorLogging {
     cipherAesWithGcm.init(Cipher.ENCRYPT_MODE, myAesKey, secureRandom)
     val encryptedPostMessageAsString = new String(Base64.getEncoder.encode(cipherAesWithGcm.doFinal(plainPostMessage.getBytes)))
 
+    signatureInst.initSign(myRsaKeyPair.getPrivate)
+    signatureInst.update(encryptedPostMessageAsString.getBytes)
+    val realSignature = new String(Base64.getEncoder.encode(signatureInst.sign()))
+
     val createUserPostReq = CreateUserPostReq(
       userId = myUserId,
       post = postTemplate.copy(
@@ -409,7 +421,8 @@ class FbUser extends Actor with ActorLogging {
         message = encryptedPostMessageAsString,
         encrypted = true,
         to_all_friends = true,
-        message_iv = new String(Base64.getEncoder.encode(cipherAesWithGcm.getIV)))
+        message_iv = new String(Base64.getEncoder.encode(cipherAesWithGcm.getIV)),
+        signature = realSignature)
     )
 
     val entity = HttpEntity(contentType = ContentType(MediaTypes.`application/json`, HttpCharsets.`UTF-8`), createUserPostReq.toJson.toString)
